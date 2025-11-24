@@ -8,10 +8,27 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { mockProducts } from "@/lib/data";
-import { Search, CreditCard, DollarSign } from "lucide-react";
+import { Search, CreditCard, DollarSign, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import type { Product } from "@/lib/types";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
 
 type CartItem = Product & { quantity: number };
 
@@ -19,6 +36,9 @@ export default function PosPage() {
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+
+  const [openEdit, setOpenEdit] = React.useState(false);
+  const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -66,6 +86,22 @@ export default function PosPage() {
     setCart([]);
     router.push(`/customers?debt=${debtAmount}`);
   };
+  
+  const handleEditClick = (product: Product) => {
+    setSelectedProduct(product);
+    setOpenEdit(true);
+  };
+  
+  const handleUpdate = () => {
+    // In a real app, you would handle form submission here
+    toast({
+      title: "تم التحديث",
+      description: "تم تحديث المنتج بنجاح.",
+    });
+    setOpenEdit(false);
+    setSelectedProduct(null);
+  };
+
 
   return (
     <AppLayout>
@@ -83,10 +119,29 @@ export default function PosPage() {
               {mockProducts.map((product) => (
                 <Card 
                   key={product.id} 
-                  className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => addToCart(product)}
+                  className="overflow-hidden relative group"
                 >
-                  <CardContent className="p-4 flex flex-col items-start justify-center h-full">
+                  <div 
+                     className="absolute top-2 right-2 z-10"
+                     onClick={(e) => e.stopPropagation()}
+                   >
+                     <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                         <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
+                           <MoreVertical className="h-4 w-4" />
+                         </Button>
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end">
+                         <DropdownMenuItem onClick={() => handleEditClick(product)}>
+                           تعديل المنتج
+                         </DropdownMenuItem>
+                       </DropdownMenuContent>
+                     </DropdownMenu>
+                   </div>
+                  <CardContent 
+                    className="p-4 flex flex-col items-start justify-center h-full cursor-pointer"
+                    onClick={() => addToCart(product)}
+                   >
                     <p className="font-semibold text-sm truncate w-full">{product.name}</p>
                     <p className="text-sm text-muted-foreground">{product.sellingPrice} د.ج</p>
                   </CardContent>
@@ -147,6 +202,39 @@ export default function PosPage() {
           </Card>
         </div>
       </div>
+       {/* Edit Product Dialog */}
+       <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تعديل المنتج</DialogTitle>
+            <DialogDescription>
+              قم بتحديث تفاصيل المنتج.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-product-name" className="text-right">
+                الاسم
+              </Label>
+              <Input id="edit-product-name" defaultValue={selectedProduct?.name} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-selling-price" className="text-right">
+                سعر البيع
+              </Label>
+              <Input id="edit-selling-price" type="number" defaultValue={selectedProduct?.sellingPrice} className="col-span-3" />
+            </div>
+          </div>
+          <DialogFooter>
+              <DialogClose asChild>
+              <Button type="button" variant="secondary" onClick={() => setSelectedProduct(null)}>
+                إلغاء
+              </Button>
+            </DialogClose>
+            <Button onClick={handleUpdate}>حفظ التغييرات</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
