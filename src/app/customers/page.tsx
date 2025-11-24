@@ -146,16 +146,27 @@ export default function CustomersPage() {
       return;
     }
     
-    setCustomers(customers.map(c => 
-      c.id === selectedCustomer.id 
-        ? { ...c, totalDebt: c.totalDebt - amount } 
-        : c
-    ));
-    
-    toast({
-      title: "تمت العملية",
-      description: `تمت إضافة دفعة بقيمة ${amount} د.ج للعميل ${selectedCustomer.name}.`,
-    });
+    const newTotalDebt = selectedCustomer.totalDebt - amount;
+
+    if (newTotalDebt <= 0) {
+        // If debt is paid off, remove the customer
+        setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
+        toast({
+            title: "تم تسديد الدين",
+            description: `تم تسديد دين العميل ${selectedCustomer.name} بالكامل.`,
+        });
+    } else {
+        // Otherwise, just update the debt
+        setCustomers(customers.map(c => 
+            c.id === selectedCustomer.id 
+                ? { ...c, totalDebt: newTotalDebt } 
+                : c
+        ));
+         toast({
+          title: "تمت العملية",
+          description: `تمت إضافة دفعة بقيمة ${amount} د.ج للعميل ${selectedCustomer.name}.`,
+        });
+    }
     
     setOpenPayment(false);
     setSelectedCustomer(null);

@@ -137,6 +137,15 @@ export default function PosPage() {
   const total = cart.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
 
   const processSale = (paymentMethod: 'cash' | 'credit', customerId?: string, customerName?: string) => {
+    if (cart.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "السلة فارغة. الرجاء إضافة منتجات أولاً.",
+      });
+      return;
+    }
+    
     // 1. Create transaction record
     const newTransaction: Transaction = {
       id: `TXN${Date.now()}`,
@@ -170,17 +179,7 @@ export default function PosPage() {
   };
 
   const handleCashPayment = () => {
-    if (cart.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "السلة فارغة. الرجاء إضافة منتجات أولاً.",
-      });
-      return;
-    }
-    
     processSale('cash');
-
     toast({
       title: "تم الدفع",
       description: `تم استلام مبلغ ${total.toFixed(2)} د.ج نقدًا.`,
@@ -205,6 +204,8 @@ export default function PosPage() {
         price: item.sellingPrice
       }));
 
+    // Redirect without processing the sale here. The sale and stock update
+    // will be handled on the customers page after a new customer is created.
     router.push(`/customers?debt=${debtAmount}&cart=${encodeURIComponent(JSON.stringify(cartData))}`);
     clearCart();
 
@@ -221,6 +222,23 @@ export default function PosPage() {
   
   const handleUpdate = () => {
     if (!selectedProduct) return;
+    
+    const result = productSchema.safeParse({
+        name: editProductDetails.name,
+        sellingPrice: editProductDetails.sellingPrice,
+        // Keep old values for fields not being edited
+        stock: selectedProduct.stock, 
+        costPrice: selectedProduct.costPrice
+    });
+
+     if (!result.success) {
+        toast({
+            variant: "destructive",
+            title: "خطأ في الإدخال",
+            description: result.error.errors.map(e => e.message).join(', '),
+        });
+        return;
+    }
     
     setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, ...editProductDetails } as Product : p));
     setCart(prevCart => prevCart.map(item => item.id === selectedProduct.id ? { ...item, ...editProductDetails } as CartItem : item));
@@ -548,5 +566,3 @@ export default function PosPage() {
     </AppLayout>
   );
 }
-
-    
