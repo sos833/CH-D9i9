@@ -1,0 +1,117 @@
+"use client"
+
+import { ColumnDef } from "@tanstack/react-table"
+import { MoreHorizontal, ArrowUpDown } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import type { Product } from "@/lib/types"
+import { Checkbox } from "@/components/ui/checkbox"
+
+export const columns: ColumnDef<Product>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "name",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          الاسم
+          <ArrowUpDown className="mr-2 h-4 w-4" />
+        </Button>
+      )
+    },
+  },
+  {
+    accessorKey: "stock",
+    header: "المخزون",
+  },
+  {
+    accessorKey: "costPrice",
+    header: "سعر التكلفة",
+    cell: ({ row }) => {
+      const amount = parseFloat(row.getValue("costPrice"))
+      const formatted = new Intl.NumberFormat("ar-DZ", {
+        style: "currency",
+        currency: "DZD",
+      }).format(amount)
+
+      return <div className="font-medium">{formatted}</div>
+    },
+  },
+  {
+    accessorKey: "sellingPrice",
+    header: "سعر البيع",
+     cell: ({ row }) => {
+      const amount = parseFloat(row.getValue("sellingPrice"))
+      const formatted = new Intl.NumberFormat("ar-DZ", {
+        style: "currency",
+        currency: "DZD",
+      }).format(amount)
+
+      return <div className="font-medium">{formatted}</div>
+    },
+  },
+   {
+    accessorKey: "barcode",
+    header: "الباركود",
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const product = row.original
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(product.id)}
+            >
+              نسخ معرف المنتج
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>تعديل المنتج</DropdownMenuItem>
+            <DropdownMenuItem>حذف المنتج</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
+  },
+]
