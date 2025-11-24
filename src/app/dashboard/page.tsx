@@ -6,7 +6,7 @@ import PageHeader from '@/components/page-header';
 import StatCard from '@/components/stat-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Users, CreditCard, Activity, Power } from 'lucide-react';
+import { DollarSign, Users, CreditCard, Activity, Power, Banknote } from 'lucide-react';
 import OverviewChart from './components/overview-chart';
 import {
   Dialog,
@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useApp } from '@/context/app-context';
 import { format, isToday, parseISO } from 'date-fns';
 import { z } from 'zod';
+import type { CashWithdrawal } from '@/lib/types';
 
 
 const summarySchema = z.object({
@@ -34,11 +35,16 @@ const summarySchema = z.object({
   profit: z.coerce.number(), // Can be negative
 });
 
+const withdrawalSchema = z.object({
+  amount: z.coerce.number().min(0.01, "مبلغ السحب يجب أن يكون أكبر من صفر."),
+});
+
 
 export default function DashboardPage() {
   const { toast } = useToast();
-  const [open, setOpen] = React.useState(false);
-  const { customers, transactions, dailySummaries, setDailySummaries } = useApp();
+  const [openSummary, setOpenSummary] = React.useState(false);
+  const [openWithdrawal, setOpenWithdrawal] = React.useState(false);
+  const { customers, transactions, dailySummaries, setDailySummaries, storeSettings, cashWithdrawals, setCashWithdrawals } = useApp();
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
@@ -46,12 +52,14 @@ export default function DashboardPage() {
   }, []);
   
   const [summary, setSummary] = React.useState({ income: '', expenses: '', profit: '' });
+  const [withdrawalAmount, setWithdrawalAmount] = React.useState('');
 
   const totalDebt = customers.reduce((sum, customer) => sum + customer.totalDebt, 0);
-  
-  // These calculations will now re-run whenever `transactions` changes.
   const todaySales = transactions.filter(t => isToday(parseISO(t.date)));
   const todayRevenue = todaySales.filter(t => t.paymentMethod === 'cash').reduce((sum, t) => sum + t.total, 0);
+  const totalCashSales = transactions.filter(t => t.paymentMethod === 'cash').reduce((sum, t) => sum + t.total, 0);
+  const totalWithdrawn = cashWithdrawals.reduce((sum, w) => sum + w.amount, 0);
+  const currentCashInBox = storeSettings.initialCash + totalCashSales - totalWithdrawn;
 
 
   const handleSummaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,7 +73,7 @@ export default function DashboardPage() {
     });
   };
 
-  const handleSave = () => {
+  const handleSaveSummary = () => {
     const result = summarySchema.safeParse({
         income: summary.income,
         expenses: summary.expenses,
@@ -102,10 +110,49 @@ export default function DashboardPage() {
       title: "تم الحفظ",
       description: "تم حفظ ملخص نهاية اليوم بنجاح.",
     });
-    setOpen(false); // Close the dialog
+    setOpenSummary(false); // Close the dialog
     setSummary({ income: '', expenses: '', profit: '' });
   };
   
+  const handleSaveWithdrawal = () => {
+    const result = withdrawalSchema.safeParse({ amount: withdrawalAmount });
+    if (!result.success) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في الإدخال",
+        description: result.error.errors[0].message,
+      });
+      return;
+    }
+
+    const amountToWithdraw = result.data.amount;
+    
+    if (amountToWithdraw > currentCashInBox) {
+       toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "المبلغ المطلوب سحبه أكبر من المبلغ الموجود في الصندوق.",
+      });
+      return;
+    }
+
+    const newWithdrawal: CashWithdrawal = {
+      id: `WDL${Date.now()}`,
+      date: new Date().toISOString(),
+      amount: amountToWithdraw,
+    };
+    
+    setCashWithdrawals(prev => [...prev, newWithdrawal]);
+    
+    toast({
+      title: "تم السحب بنجاح",
+      description: `تم سحب مبلغ ${amountToWithdraw.toFixed(2)} د.ج من الصندوق.`,
+    });
+
+    setOpenWithdrawal(false);
+    setWithdrawalAmount('');
+  };
+
   if (!isClient) {
     // Render a loading state or skeleton on the server
     return (
@@ -114,7 +161,8 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
                <PageHeader title="لوحة المعلومات" description="نظرة عامة على أداء متجرك." />
             </div>
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+              <Card><CardContent className="p-6 h-28"></CardContent></Card>
               <Card><CardContent className="p-6 h-28"></CardContent></Card>
               <Card><CardContent className="p-6 h-28"></CardContent></Card>
               <Card><CardContent className="p-6 h-28"></CardContent></Card>
@@ -134,7 +182,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <PageHeader title="لوحة المعلومات" description="نظرة عامة على أداء متجرك." />
           <div className="ml-auto flex items-center gap-2">
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={openSummary} onOpenChange={setOpenSummary}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-8 gap-1">
                   <Power className="h-3.5 w-3.5" />
@@ -176,13 +224,13 @@ export default function DashboardPage() {
                       إلغاء
                     </Button>
                   </DialogClose>
-                  <Button type="button" onClick={handleSave}>حفظ</Button>
+                  <Button type="button" onClick={handleSaveSummary}>حفظ</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <StatCard 
             title="إيرادات اليوم (النقدية)" 
             value={`د.ج ${todayRevenue.toFixed(2)}`}
@@ -207,6 +255,56 @@ export default function DashboardPage() {
             icon={<Users />} 
             description="عدد العملاء المسجلين" 
           />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">صندوق النقد (لاكاس)</CardTitle>
+              <Banknote className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{currentCashInBox.toFixed(2)} د.ج</div>
+              <p className="text-xs text-muted-foreground">
+                الرصيد النقدي الحالي في الصندوق
+              </p>
+              <Dialog open={openWithdrawal} onOpenChange={setOpenWithdrawal}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="mt-4 w-full">
+                    سحب أموال
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>سحب أموال من الصندوق</DialogTitle>
+                    <DialogDescription>
+                      أدخل المبلغ الذي تود سحبه. الرصيد الحالي: {currentCashInBox.toFixed(2)} د.ج
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="withdrawal-amount" className="text-right">
+                        المبلغ
+                      </Label>
+                      <Input
+                        id="withdrawal-amount"
+                        type="number"
+                        placeholder="0.00"
+                        className="col-span-3"
+                        value={withdrawalAmount}
+                        onChange={(e) => setWithdrawalAmount(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="secondary">
+                        إلغاء
+                      </Button>
+                    </DialogClose>
+                    <Button type="button" onClick={handleSaveWithdrawal}>تأكيد السحب</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
         </div>
         <div className="grid gap-4 grid-cols-1">
           <Tabs defaultValue="month" className="space-y-4">
@@ -253,3 +351,5 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+    
