@@ -15,7 +15,11 @@ import {
 import type { Product } from "@/lib/types"
 import { Checkbox } from "@/components/ui/checkbox"
 
-export const columns: ColumnDef<Product>[] = [
+type ColumnsProps = {
+  onEdit: (product: Product) => void;
+}
+
+export const columns = ({ onEdit }: ColumnsProps): ColumnDef<Product>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -107,7 +111,7 @@ export const columns: ColumnDef<Product>[] = [
               نسخ معرف المنتج
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>تعديل المنتج</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(product)}>تعديل المنتج</DropdownMenuItem>
             <DropdownMenuItem>حذف المنتج</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
