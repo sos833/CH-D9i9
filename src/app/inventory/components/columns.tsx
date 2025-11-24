@@ -17,9 +17,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 
 type ColumnsProps = {
   onEdit: (product: Product) => void;
+  onDelete: (product: Product) => void;
 }
 
-export const columns = ({ onEdit }: ColumnsProps): ColumnDef<Product>[] => [
+export const columns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Product>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -105,14 +106,14 @@ export const columns = ({ onEdit }: ColumnsProps): ColumnDef<Product>[] => [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(product.id)}
-            >
-              نسخ معرف المنتج
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onEdit(product)}>تعديل المنتج</DropdownMenuItem>
-            <DropdownMenuItem>حذف المنتج</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => onDelete(product)} 
+              className="text-destructive focus:text-destructive"
+            >
+              حذف المنتج
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )

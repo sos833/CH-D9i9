@@ -18,14 +18,26 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@/lib/types";
 
 export default function InventoryPage() {
+  const [products, setProducts] = React.useState<Product[]>(mockProducts);
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
+  const [openDelete, setOpenDelete] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
   const { toast } = useToast();
 
@@ -52,8 +64,24 @@ export default function InventoryPage() {
     setSelectedProduct(product);
     setOpenEdit(true);
   };
+
+  const handleDeleteClick = (product: Product) => {
+    setSelectedProduct(product);
+    setOpenDelete(true);
+  };
+
+  const confirmDelete = () => {
+    if (!selectedProduct) return;
+    setProducts(products.filter(p => p.id !== selectedProduct.id));
+    toast({
+      title: "تم الحذف",
+      description: `تم حذف المنتج "${selectedProduct.name}" بنجاح.`,
+    });
+    setOpenDelete(false);
+    setSelectedProduct(null);
+  };
   
-  const columns = columnsDef({ onEdit: handleEditClick });
+  const columns = columnsDef({ onEdit: handleEditClick, onDelete: handleDeleteClick });
 
   return (
     <AppLayout>
@@ -118,8 +146,17 @@ export default function InventoryPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        </div>
+      </div>
+      <DataTable
+        columns={columns}
+        data={products}
+        filterColumnId="name"
+        filterPlaceholder="تصفية المنتجات..."
+      />
 
-          {/* Edit Product Dialog */}
+       {/* Edit Product Dialog */}
+       {selectedProduct && (
           <Dialog open={openEdit} onOpenChange={setOpenEdit}>
             <DialogContent>
               <DialogHeader>
@@ -164,15 +201,27 @@ export default function InventoryPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        )}
 
-        </div>
-      </div>
-      <DataTable
-        columns={columns}
-        data={mockProducts}
-        filterColumnId="name"
-        filterPlaceholder="تصفية المنتجات..."
-      />
+      {/* Delete Product Confirmation Dialog */}
+      {selectedProduct && (
+        <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
+              <AlertDialogDescription>
+                هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف المنتج بشكل دائم
+                من خوادمنا.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setSelectedProduct(null)}>إلغاء</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>متابعة</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
     </AppLayout>
   );
 }

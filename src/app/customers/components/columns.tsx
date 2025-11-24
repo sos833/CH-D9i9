@@ -15,7 +15,13 @@ import {
 import type { Customer } from "@/lib/types"
 import { Checkbox } from "@/components/ui/checkbox"
 
-export const columns: ColumnDef<Customer>[] = [
+type ColumnsProps = {
+  onAddPayment: (customer: Customer) => void;
+  onEdit: (customer: Customer) => void;
+  onViewDetails: (customer: Customer) => void;
+};
+
+export const columns = ({ onAddPayment, onEdit, onViewDetails }: ColumnsProps): ColumnDef<Customer>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -86,10 +92,10 @@ export const columns: ColumnDef<Customer>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
-            <DropdownMenuItem>إضافة دفعة</DropdownMenuItem>
-            <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAddPayment(customer)}>إضافة دفعة</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onViewDetails(customer)}>عرض التفاصيل</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>تعديل العميل</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(customer)}>تعديل العميل</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
