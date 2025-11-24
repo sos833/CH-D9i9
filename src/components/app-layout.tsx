@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -9,6 +10,7 @@ import {
   Users,
   PanelLeft,
   Search,
+  Receipt,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -27,16 +29,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { useApp } from '@/context/app-context';
 
 const navItems = [
   { href: '/dashboard', icon: <LayoutDashboard />, label: 'لوحة المعلومات' },
   { href: '/pos', icon: <ShoppingCart />, label: 'نقطة البيع' },
+  { href: '/transactions', icon: <Receipt />, label: 'المعاملات' },
   { href: '/inventory', icon: <Package />, label: 'المخزون' },
   { href: '/customers', icon: <Users />, label: 'العملاء' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { storeSettings } = useApp();
 
   return (
     <SidebarProvider>
@@ -49,7 +54,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarHeader className="h-14">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <Logo className="h-6 w-6 text-sidebar-primary" />
-              <span className="">دفتر دي زاد</span>
+              <span className="">{storeSettings.storeName || 'دفتر دي زاد'}</span>
             </Link>
           </SidebarHeader>
           <SidebarContent>
@@ -84,7 +89,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <SidebarHeader className="h-14">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
                       <Logo className="h-6 w-6 text-sidebar-primary" />
-                      <span className="">دفتر دي زاد</span>
+                      <span className="">{storeSettings.storeName || 'دفتر دي زاد'}</span>
                     </Link>
                   </SidebarHeader>
                 <nav className="grid gap-6 text-lg font-medium p-6">

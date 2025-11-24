@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -10,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Search, CreditCard, DollarSign, MoreVertical, Plus, Minus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
-import type { Product } from "@/lib/types";
+import type { Product, Transaction } from "@/lib/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +37,7 @@ export default function PosPage() {
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const { toast } = useToast();
   const router = useRouter();
-  const { products, setProducts } = useApp();
+  const { products, setProducts, setTransactions } = useApp();
 
   const [openEdit, setOpenEdit] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
@@ -103,19 +104,36 @@ export default function PosPage() {
 
   const total = cart.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
 
-  const processSale = () => {
-    // Update stock in global context
+  const processSale = (paymentMethod: 'cash' | 'credit', customerId?: string, customerName?: string) => {
+    // 1. Create transaction record
+    const newTransaction: Transaction = {
+      id: `TXN${Date.now()}`,
+      date: new Date().toISOString(),
+      items: cart.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.sellingPrice
+      })),
+      total: total,
+      paymentMethod: paymentMethod,
+      customerId: customerId,
+      customerName: customerName
+    };
+    setTransactions(prev => [...prev, newTransaction]);
+    
+    // 2. Update stock in global context
     setProducts(prevProducts => {
-      const newProducts = [...prevProducts];
-      cart.forEach(cartItem => {
-        const productIndex = newProducts.findIndex(p => p.id === cartItem.id);
-        if (productIndex !== -1) {
-          newProducts[productIndex].stock -= cartItem.quantity;
+      return prevProducts.map(p => {
+        const cartItem = cart.find(ci => ci.id === p.id);
+        if (cartItem) {
+          return { ...p, stock: p.stock - cartItem.quantity };
         }
+        return p;
       });
-      return newProducts;
     });
 
+    // 3. Clear the cart
     clearCart();
   };
 
@@ -129,7 +147,7 @@ export default function PosPage() {
       return;
     }
     
-    processSale();
+    processSale('cash');
 
     toast({
       title: "تم الدفع",
@@ -146,11 +164,20 @@ export default function PosPage() {
       });
       return;
     }
-    const debtAmount = total.toFixed(2);
+    const debtAmount = total;
     
-    processSale();
+    // We don't process the sale here yet. We pass the cart and total to the customer page.
+    // The sale will be processed there once a customer is chosen.
+    const cartData = cart.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.sellingPrice
+      }));
 
-    router.push(`/customers?debt=${debtAmount}`);
+    router.push(`/customers?debt=${debtAmount}&cart=${encodeURIComponent(JSON.stringify(cartData))}`);
+    clearCart();
+
   };
   
   const handleEditClick = (product: Product) => {
@@ -166,6 +193,8 @@ export default function PosPage() {
     if (!selectedProduct) return;
     
     setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, ...editProductDetails } as Product : p));
+     // Also update the item if it's in the cart
+    setCart(prevCart => prevCart.map(item => item.id === selectedProduct.id ? { ...item, ...editProductDetails } as CartItem : item));
 
     toast({
       title: "تم التحديث",
@@ -183,7 +212,7 @@ export default function PosPage() {
 
   const filteredProducts = products.filter(product => 
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.barcode?.includes(searchQuery)
+    (product.barcode && product.barcode.includes(searchQuery))
   );
 
   return (

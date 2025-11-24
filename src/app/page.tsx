@@ -1,6 +1,24 @@
+
+'use client';
+import { useApp } from '@/context/app-context';
 import { redirect } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function Home() {
-  // Redirect to the new onboarding page instead of the dashboard
-  redirect('/onboarding');
+  const { storeSettings } = useApp();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return <div>جار التحميل...</div>; // Or a proper loading spinner
+  }
+
+  if (storeSettings.initialSetupDone) {
+    redirect('/dashboard');
+  } else {
+    redirect('/onboarding');
+  }
 }

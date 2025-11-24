@@ -1,3 +1,4 @@
+
 "use client";
 
 import AppLayout from '@/components/app-layout';
@@ -5,7 +6,7 @@ import PageHeader from '@/components/page-header';
 import StatCard from '@/components/stat-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Users, CreditCard, Activity, Power } from 'lucide-react';
+import { DollarSign, Users, CreditCard, Activity, Power, TrendingUp } from 'lucide-react';
 import OverviewChart from './components/overview-chart';
 import {
   Dialog,
@@ -23,23 +24,82 @@ import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useApp } from '@/context/app-context';
+import { format, isToday, parseISO } from 'date-fns';
+import { z } from 'zod';
+
+
+const summarySchema = z.object({
+  income: z.coerce.number().min(0, "المدخلات يجب أن تكون رقمًا موجبًا."),
+  expenses: z.coerce.number().min(0, "المخرجات يجب أن تكون رقمًا موجبًا."),
+  profit: z.coerce.number(), // Can be negative
+  newDebts: z.coerce.number().min(0, "الديون يجب أن تكون رقمًا موجبًا."),
+});
 
 
 export default function DashboardPage() {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
-  const { customers, products } = useApp();
+  const { customers, transactions, dailySummaries, setDailySummaries } = useApp();
+  
+  const [summary, setSummary] = React.useState({ income: '', expenses: '', profit: '', newDebts: ''});
 
   const totalDebt = customers.reduce((sum, customer) => sum + customer.totalDebt, 0);
+  
+  const todaySales = transactions.filter(t => isToday(parseISO(t.date)));
+  const todayRevenue = todaySales.filter(t => t.paymentMethod === 'cash').reduce((sum, t) => sum + t.total, 0);
+
+
+  const handleSummaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setSummary(prev => {
+        const newSummary = { ...prev, [id]: value };
+        const income = parseFloat(newSummary.income) || 0;
+        const expenses = parseFloat(newSummary.expenses) || 0;
+        const profit = income - expenses;
+        return { ...newSummary, profit: isNaN(profit) ? '' : profit.toFixed(2) };
+    });
+  };
 
   const handleSave = () => {
-    // Here you would typically save the data to your backend
-    console.log("Saving end of day summary...");
+    const result = summarySchema.safeParse({
+        income: summary.income,
+        expenses: summary.expenses,
+        profit: summary.profit,
+        newDebts: summary.newDebts
+    });
+
+    if (!result.success) {
+        toast({
+            variant: "destructive",
+            title: "خطأ في الإدخال",
+            description: result.error.errors[0].message,
+        });
+        return;
+    }
+
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const newSummary = {
+      id: today,
+      date: new Date().toISOString(),
+      ...result.data
+    };
+
+    setDailySummaries(prev => {
+      const existingIndex = prev.findIndex(s => s.id === today);
+      if (existingIndex > -1) {
+        const updatedSummaries = [...prev];
+        updatedSummaries[existingIndex] = newSummary;
+        return updatedSummaries;
+      }
+      return [...prev, newSummary];
+    });
+
     toast({
       title: "تم الحفظ",
       description: "تم حفظ ملخص نهاية اليوم بنجاح.",
     });
     setOpen(false); // Close the dialog
+    setSummary({ income: '', expenses: '', profit: '', newDebts: ''});
   };
 
   return (
@@ -66,28 +126,28 @@ export default function DashboardPage() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="daily-income" className="text-right">
+                    <Label htmlFor="income" className="text-right">
                       المدخلات
                     </Label>
-                    <Input id="daily-income" type="number" placeholder="0.00" className="col-span-3" />
+                    <Input id="income" type="number" placeholder="0.00" className="col-span-3" value={summary.income} onChange={handleSummaryChange}/>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="expenses" className="text-right">
                       المخرجات
                     </Label>
-                    <Input id="expenses" type="number" placeholder="0.00" className="col-span-3" />
+                    <Input id="expenses" type="number" placeholder="0.00" className="col-span-3" value={summary.expenses} onChange={handleSummaryChange}/>
                   </div>
                    <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="profit" className="text-right">
                       الربح
                     </Label>
-                    <Input id="profit" type="number" placeholder="0.00" className="col-span-3" />
+                    <Input id="profit" type="number" placeholder="0.00" className="col-span-3" value={summary.profit} readOnly/>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="debts" className="text-right">
+                    <Label htmlFor="newDebts" className="text-right">
                       ديون جديدة
                     </Label>
-                    <Input id="debts" type="number" placeholder="0.00" className="col-span-3" />
+                    <Input id="newDebts" type="number" placeholder="0.00" className="col-span-3" value={summary.newDebts} onChange={handleSummaryChange}/>
                   </div>
                 </div>
                 <DialogFooter>
@@ -104,10 +164,10 @@ export default function DashboardPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard 
-            title="إجمالي الإيرادات" 
-            value="د.ج 45,231.89" 
+            title="إيرادات اليوم (النقدية)" 
+            value={`د.ج ${todayRevenue.toFixed(2)}`}
             icon={<DollarSign />} 
-            description="+20.1% عن الشهر الماضي" 
+            description={`${todaySales.length} عملية بيع اليوم`} 
           />
           <StatCard 
             title="إجمالي الديون" 
@@ -116,16 +176,16 @@ export default function DashboardPage() {
             description={`${customers.filter(c => c.totalDebt > 0).length} عملاء مدينون`} 
           />
            <StatCard 
-            title="مبيعات اليوم" 
-            value="+573" 
+            title="إجمالي المبيعات" 
+            value={transactions.length.toString()} 
             icon={<Activity />} 
-            description="+201 since last hour" 
+            description="إجمالي عدد المعاملات" 
           />
           <StatCard 
-            title="عملاء جدد" 
-            value={`+${customers.length}`}
+            title="إجمالي العملاء" 
+            value={`${customers.length}`}
             icon={<Users />} 
-            description="إجمالي العملاء" 
+            description="عدد العملاء المسجلين" 
           />
         </div>
         <div className="grid gap-4 grid-cols-1">

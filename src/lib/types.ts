@@ -17,13 +17,29 @@ export type Customer = {
 
 export type Transaction = {
   id: string;
-  date: Date;
+  date: string; // Using ISO string for localStorage compatibility
   items: {
     productId: string;
+    productName: string;
     quantity: number;
     price: number;
   }[];
   total: number;
   paymentMethod: 'cash' | 'credit';
   customerId?: string;
+  customerName?: string;
+};
+
+export type StoreSettings = {
+  storeName: string;
+  initialSetupDone: boolean;
+};
+
+export type DailySummary = {
+  id: string; // e.g., '2024-07-26'
+  date: string;
+  income: number;
+  expenses: number;
+  profit: number;
+  newDebts: number;
 };

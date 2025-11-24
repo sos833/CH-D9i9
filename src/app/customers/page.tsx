@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -20,8 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useSearchParams } from 'next/navigation';
-import type { Customer } from "@/lib/types";
+import { useSearchParams, useRouter } from 'next/navigation';
+import type { Customer, Product, Transaction } from "@/lib/types";
 import { useApp } from "@/context/app-context";
 import { z } from "zod";
 
@@ -30,8 +31,15 @@ const customerSchema = z.object({
   phone: z.string().min(1, "الهاتف مطلوب"),
 });
 
+type CartItemData = {
+    productId: string;
+    productName: string;
+    quantity: number;
+    price: number;
+}
+
 export default function CustomersPage() {
-  const { customers, setCustomers } = useApp();
+  const { customers, setCustomers, setTransactions, setProducts } = useApp();
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openPayment, setOpenPayment] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
@@ -48,10 +56,16 @@ export default function CustomersPage() {
 
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const debtAmount = searchParams.get('debt');
+  const router = useRouter();
+  const debtAmountStr = searchParams.get('debt');
+  const cartStr = searchParams.get('cart');
+
+  const debtAmount = debtAmountStr ? parseFloat(debtAmountStr) : 0;
+  const cartFromPOS: CartItemData[] | null = cartStr ? JSON.parse(decodeURIComponent(cartStr)) : null;
+
   
   React.useEffect(() => {
-    if (debtAmount) {
+    if (debtAmount > 0) {
       setOpenAdd(true);
     }
   }, [debtAmount]);
@@ -71,11 +85,36 @@ export default function CustomersPage() {
       id: `CUST${Date.now()}`,
       name: newCustomerName,
       phone: newCustomerPhone,
-      totalDebt: debtAmount ? parseFloat(debtAmount) : 0,
+      totalDebt: debtAmount || 0,
     };
     
     setCustomers(prev => [...prev, newCustomer]);
     
+    // If this is a credit sale from POS, create the transaction
+    if (cartFromPOS && debtAmount > 0) {
+        const newTransaction: Transaction = {
+            id: `TXN${Date.now()}`,
+            date: new Date().toISOString(),
+            items: cartFromPOS,
+            total: debtAmount,
+            paymentMethod: 'credit',
+            customerId: newCustomer.id,
+            customerName: newCustomer.name,
+        };
+        setTransactions(prev => [...prev, newTransaction]);
+        
+        // Update product stock
+        setProducts(prevProducts => {
+            return prevProducts.map(p => {
+                const cartItem = cartFromPOS.find(ci => ci.productId === p.id);
+                if (cartItem) {
+                    return { ...p, stock: p.stock - cartItem.quantity };
+                }
+                return p;
+            });
+        });
+    }
+
     toast({
       title: "تم الحفظ",
       description: `تمت إضافة العميل ${newCustomer.name} بنجاح.`,
@@ -83,6 +122,8 @@ export default function CustomersPage() {
     setOpenAdd(false);
     setNewCustomerName("");
     setNewCustomerPhone("");
+    // Clean up URL params
+    router.replace('/customers');
   };
   
   const handleAddPaymentClick = (customer: Customer) => {
@@ -98,10 +139,14 @@ export default function CustomersPage() {
       toast({ variant: "destructive", title: "خطأ", description: "الرجاء إدخال مبلغ صحيح." });
       return;
     }
+    if (amount > selectedCustomer.totalDebt) {
+       toast({ variant: "destructive", title: "خطأ", description: "المبلغ المدفوع أكبر من الدين." });
+      return;
+    }
     
     setCustomers(customers.map(c => 
       c.id === selectedCustomer.id 
-        ? { ...c, totalDebt: Math.max(0, c.totalDebt - amount) } 
+        ? { ...c, totalDebt: c.totalDebt - amount } 
         : c
     ));
     
@@ -165,7 +210,10 @@ export default function CustomersPage() {
         <PageHeader title="العملاء" description="إدارة العملاء وتتبع ديونهم." />
         <div className="ml-auto flex items-center gap-2">
           {/* Add Customer Dialog */}
-          <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+          <Dialog open={openAdd} onOpenChange={(isOpen) => {
+            setOpenAdd(isOpen);
+            if (!isOpen) router.replace('/customers');
+          }}>
             <DialogTrigger asChild>
               <Button size="sm" className="h-8 gap-1">
                 <PlusCircle className="h-3.5 w-3.5" />
@@ -194,18 +242,18 @@ export default function CustomersPage() {
                   </Label>
                   <Input id="phone" placeholder="0XXXXXXXXX" className="col-span-3" value={newCustomerPhone} onChange={e => setNewCustomerPhone(e.target.value)}/>
                 </div>
-                {debtAmount && (
+                {debtAmount > 0 && (
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="debt" className="text-right">
                       قيمة الدين
                     </Label>
-                    <Input id="debt" value={`${debtAmount} د.ج`} readOnly className="col-span-3" />
+                    <Input id="debt" value={`${debtAmount.toFixed(2)} د.ج`} readOnly className="col-span-3" />
                   </div>
                 )}
               </div>
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button type="button" variant="secondary">
+                  <Button type="button" variant="secondary" onClick={() => router.replace('/customers')}>
                     إلغاء
                   </Button>
                 </DialogClose>

@@ -1,61 +1,68 @@
+
 "use client"
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
-import { subDays, format } from "date-fns"
+import { subDays, format, startOfWeek, startOfMonth, eachDayOfInterval, getDay, eachHourOfInterval, startOfHour, endOfDay, subHours } from "date-fns"
 import { ar } from "date-fns/locale"
+import { useApp } from "@/context/app-context"
+import { parseISO } from "date-fns"
 
-type OverviewChartProps = {
-  viewMode: 'day' | 'week' | 'month';
-};
 
-const generateChartData = (viewMode: 'day' | 'week' | 'month') => {
-  const now = new Date();
-  let data = [];
+export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' | 'month' }) {
+  const { transactions } = useApp();
 
-  switch (viewMode) {
-    case 'day':
-      // Show last 24 hours
-      for (let i = 23; i >= 0; i--) {
-        const date = subDays(now, i / 24); // Not precise, but good for hourly demo
-        data.push({
-          name: `${23-i}:00`,
-          total: Math.floor(Math.random() * 1000) + 200,
+  const generateChartData = () => {
+    const now = new Date();
+    
+    if (viewMode === 'day') {
+      const hours = eachHourOfInterval({
+        start: subHours(startOfHour(now), 23),
+        end: startOfHour(now)
+      });
+      return hours.map(hour => {
+        const total = transactions
+          .filter(t => {
+            const tDate = parseISO(t.date);
+            return tDate >= hour && tDate < new Date(hour.getTime() + 60 * 60 * 1000);
+          })
+          .reduce((sum, t) => sum + t.total, 0);
+        return { name: format(hour, 'HH:mm'), total };
+      });
+    }
+
+    if (viewMode === 'week') {
+      const weekStart = startOfWeek(now, { locale: ar });
+      const days = eachDayOfInterval({ start: weekStart, end: now });
+      return days.map(day => {
+        const total = transactions
+          .filter(t => format(parseISO(t.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
+          .reduce((sum, t) => sum + t.total, 0);
+        return { name: format(day, 'EEEE', { locale: ar }), total };
+      });
+    }
+
+    if (viewMode === 'month') {
+        const monthStart = startOfMonth(now);
+        const days = eachDayOfInterval({ start: monthStart, end: now });
+        return days.map(day => {
+            const total = transactions
+              .filter(t => format(parseISO(t.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
+              .reduce((sum, t) => sum + t.total, 0);
+            return { name: format(day, 'd MMM'), total };
         });
-      }
-      break;
-    case 'week':
-       // Show last 7 days
-      for (let i = 6; i >= 0; i--) {
-        const date = subDays(now, i);
-        data.push({
-          name: format(date, 'EEEE', { locale: ar }),
-          total: Math.floor(Math.random() * 5000) + 1000,
-        });
-      }
-      break;
-    case 'month':
-    default:
-       // Show last 30 days
-       for (let i = 29; i >= 0; i--) {
-        const date = subDays(now, i);
-        data.push({
-          name: format(date, 'd MMM', { locale: ar }),
-          total: Math.floor(Math.random() * 8000) + 1500,
-        });
-      }
-      break;
-  }
-  return data;
-}
+    }
+    
+    return [];
+  };
 
+  const data = generateChartData();
 
-export default function OverviewChart({ viewMode }: OverviewChartProps) {
-  const data = generateChartData(viewMode);
   return (
     <ChartContainer config={{}} className="min-h-[250px] w-full">
       <ResponsiveContainer width="100%" height={350}>
         <BarChart data={data}>
+           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="name"
             stroke="#888888"
@@ -68,11 +75,11 @@ export default function OverviewChart({ viewMode }: OverviewChartProps) {
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value) => `د.ج ${value}`}
+            tickFormatter={(value) => `${value} د.ج`}
           />
           <Tooltip 
             cursor={{ fill: 'hsl(var(--muted))' }}
-            content={<ChartTooltipContent />}
+            content={<ChartTooltipContent formatter={(value) => `${value} د.ج`} />}
           />
           <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
         </BarChart>

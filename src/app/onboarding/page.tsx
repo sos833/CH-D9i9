@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -13,14 +14,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons';
 import { useRouter } from 'next/navigation';
+import { useApp } from '@/context/app-context';
+import * as React from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { setStoreSettings } = useApp();
+  const { toast } = useToast();
+  const [storeName, setStoreName] = React.useState('');
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // Here you would typically save the data
-    // For now, we'll just redirect to the dashboard
+
+    if (!storeName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "الرجاء إدخال اسم المحل.",
+      });
+      return;
+    }
+    
+    setStoreSettings({
+      storeName: storeName,
+      initialSetupDone: true,
+    });
+    
+    toast({
+      title: "تم الإعداد بنجاح!",
+      description: `مرحباً بك في ${storeName}.`,
+    });
+
     router.push('/dashboard');
   };
 
@@ -34,39 +59,19 @@ export default function OnboardingPage() {
             </div>
             <CardTitle className="text-2xl">مرحبًا بك في دفتر دي زاد</CardTitle>
             <CardDescription>
-              لنقم بإعداد حسابك. أدخل المعلومات الأولية لمتجرك.
+              لنقم بإعداد حسابك. أدخل اسم متجرك للبدء.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="store-name">اسم المحل</Label>
-                <Input
-                  id="store-name"
-                  placeholder="مثال: متجر السعادة"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="initial-revenue">الإيرادات الأولية</Label>
-                  <Input
-                    id="initial-revenue"
-                    type="number"
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="initial-debt">إجمالي الدين الأولي</Label>
-                  <Input
-                    id="initial-debt"
-                    type="number"
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-              </div>
+            <div className="grid gap-2">
+              <Label htmlFor="store-name">اسم المحل</Label>
+              <Input
+                id="store-name"
+                placeholder="مثال: متجر السعادة"
+                required
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
+              />
             </div>
           </CardContent>
           <CardFooter>
