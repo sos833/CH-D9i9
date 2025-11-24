@@ -8,7 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, CreditCard, DollarSign, MoreVertical, Plus, Minus, Trash2 } from "lucide-react";
+import { Search, CreditCard, DollarSign, MoreVertical, Plus, Minus, Trash2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import type { Product, Transaction } from "@/lib/types";
@@ -17,6 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -26,9 +27,31 @@ import {
   DialogTitle,
   DialogFooter,
   DialogClose,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { Label } from "@/components/ui/label";
 import { useApp } from "@/context/app-context";
+import { z } from "zod";
+
+
+const productSchema = z.object({
+    name: z.string().min(1, "اسم المنتج مطلوب"),
+    stock: z.coerce.number().min(0, "المخزون لا يمكن أن يكون سالبًا"),
+    costPrice: z.coerce.number().min(0, "سعر التكلفة لا يمكن أن يكون سالبًا"),
+    sellingPrice: z.coerce.number().min(0, "سعر البيع لا يمكن أن يكون سالبًا"),
+    barcode: z.string().optional(),
+});
 
 
 type CartItem = Product & { quantity: number };
@@ -39,10 +62,14 @@ export default function PosPage() {
   const router = useRouter();
   const { products, setProducts, setTransactions } = useApp();
 
+  const [openAdd, setOpenAdd] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
+  const [openDelete, setOpenDelete] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
   const [editProductDetails, setEditProductDetails] = React.useState<Partial<Product>>({});
   const [searchQuery, setSearchQuery] = React.useState("");
+
+  const [newProduct, setNewProduct] = React.useState({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -166,8 +193,6 @@ export default function PosPage() {
     }
     const debtAmount = total;
     
-    // We don't process the sale here yet. We pass the cart and total to the customer page.
-    // The sale will be processed there once a customer is chosen.
     const cartData = cart.map(item => ({
         productId: item.id,
         productName: item.name,
@@ -193,7 +218,6 @@ export default function PosPage() {
     if (!selectedProduct) return;
     
     setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, ...editProductDetails } as Product : p));
-     // Also update the item if it's in the cart
     setCart(prevCart => prevCart.map(item => item.id === selectedProduct.id ? { ...item, ...editProductDetails } as CartItem : item));
 
     toast({
@@ -215,18 +239,137 @@ export default function PosPage() {
     (product.barcode && product.barcode.includes(searchQuery))
   );
 
+  const handleDeleteClick = (product: Product) => {
+    setSelectedProduct(product);
+    setOpenDelete(true);
+  };
+
+  const confirmDelete = () => {
+    if (!selectedProduct) return;
+    setProducts(products.filter(p => p.id !== selectedProduct.id));
+    setCart(cart.filter(p => p.id !== selectedProduct.id));
+    toast({
+      title: "تم الحذف",
+      description: `تم حذف المنتج "${selectedProduct.name}" بنجاح.`,
+    });
+    setOpenDelete(false);
+    setSelectedProduct(null);
+  };
+
+  const handleSave = () => {
+    const result = productSchema.safeParse({
+        name: newProduct.name,
+        stock: newProduct.stock,
+        costPrice: newProduct.costPrice || 0, // Default to 0 if empty
+        sellingPrice: newProduct.sellingPrice,
+        barcode: newProduct.barcode,
+    });
+
+    if (!result.success) {
+        toast({
+            variant: "destructive",
+            title: "خطأ في الإدخال",
+            description: result.error.errors[0].message,
+        });
+        return;
+    }
+    
+    const productToAdd: Product = {
+      id: `PROD${Date.now()}`,
+      name: result.data.name,
+      barcode: result.data.barcode || '',
+      stock: result.data.stock,
+      costPrice: result.data.costPrice,
+      sellingPrice: result.data.sellingPrice,
+    };
+    
+    setProducts(prev => [...prev, productToAdd]);
+    toast({
+      title: "تم الحفظ",
+      description: "تمت إضافة المنتج بنجاح.",
+    });
+    setOpenAdd(false);
+    setNewProduct({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
+  };
+  
+  const handleNewProductChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setNewProduct(prev => ({ ...prev, [id]: value }));
+  };
+
+
   return (
     <AppLayout>
       <div className="grid flex-1 items-start gap-4 md:gap-8 lg:grid-cols-3 xl:grid-cols-3">
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-          <div className="relative">
-            <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="البحث عن منتج بالاسم أو الباركود..."
-              className="w-full pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="البحث عن منتج بالاسم أو الباركود..."
+                className="w-full pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+             <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="h-10 gap-1">
+                  <PlusCircle className="h-4 w-4" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    إضافة منتج
+                  </span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>إضافة منتج جديد</DialogTitle>
+                  <DialogDescription>
+                    أدخل تفاصيل المنتج الجديد لإضافته إلى المخزون.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      الاسم
+                    </Label>
+                    <Input id="name" placeholder="اسم المنتج" className="col-span-3" value={newProduct.name} onChange={handleNewProductChange} />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="barcode" className="text-right">
+                      الباركود
+                    </Label>
+                    <Input id="barcode" placeholder="الباركود (اختياري)" className="col-span-3" value={newProduct.barcode} onChange={handleNewProductChange} />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="stock" className="text-right">
+                      المخزون
+                    </Label>
+                    <Input id="stock" type="number" placeholder="0" className="col-span-3" value={newProduct.stock} onChange={handleNewProductChange}/>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="costPrice" className="text-right">
+                      سعر التكلفة
+                    </Label>
+                    <Input id="costPrice" type="number" placeholder="0.00" className="col-span-3" value={newProduct.costPrice} onChange={handleNewProductChange} />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="sellingPrice" className="text-right">
+                      سعر البيع
+                    </Label>
+                    <Input id="sellingPrice" type="number" placeholder="0.00" className="col-span-3" value={newProduct.sellingPrice} onChange={handleNewProductChange} />
+                  </div>
+                </div>
+                <DialogFooter>
+                   <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                      إلغاء
+                    </Button>
+                  </DialogClose>
+                  <Button onClick={handleSave}>حفظ المنتج</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
           <ScrollArea className="h-[60vh]">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -248,6 +391,10 @@ export default function PosPage() {
                        <DropdownMenuContent align="end">
                          <DropdownMenuItem onClick={() => handleEditClick(product)}>
                            تعديل المنتج
+                         </DropdownMenuItem>
+                         <DropdownMenuSeparator />
+                         <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive focus:text-destructive">
+                           حذف المنتج
                          </DropdownMenuItem>
                        </DropdownMenuContent>
                      </DropdownMenu>
@@ -331,6 +478,7 @@ export default function PosPage() {
           </Card>
         </div>
       </div>
+      
        {/* Edit Product Dialog */}
        {selectedProduct && (
        <Dialog open={openEdit} onOpenChange={setOpenEdit}>
@@ -366,6 +514,28 @@ export default function PosPage() {
         </DialogContent>
       </Dialog>
       )}
+
+      {/* Delete Product Confirmation Dialog */}
+      {selectedProduct && (
+        <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>هل أنت متأكد تمامًا؟</AlertDialogTitle>
+              <AlertDialogDescription>
+                هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف المنتج بشكل دائم
+                من مخزونك.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setSelectedProduct(null)}>إلغاء</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>متابعة</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
     </AppLayout>
   );
 }
+
+    
