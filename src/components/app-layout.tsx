@@ -11,6 +11,7 @@ import {
   PanelLeft,
   Search,
   Receipt,
+  Wallet,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -37,6 +38,7 @@ const navItems = [
   { href: '/transactions', icon: <Receipt />, label: 'المعاملات' },
   { href: '/inventory', icon: <Package />, label: 'المخزون' },
   { href: '/customers', icon: <Users />, label: 'العملاء' },
+  { href: '/cashbox', icon: <Wallet />, label: 'الصندوق' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
