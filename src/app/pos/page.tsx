@@ -57,10 +57,11 @@ const productSchema = z.object({
 type CartItem = Product & { quantity: number };
 
 export default function PosPage() {
+  const { products, setProducts, setTransactions } = useApp();
+  const [isClient, setIsClient] = React.useState(false);
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const { toast } = useToast();
   const router = useRouter();
-  const { products, setProducts, setTransactions } = useApp();
 
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
@@ -70,6 +71,10 @@ export default function PosPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const [newProduct, setNewProduct] = React.useState({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -371,45 +376,51 @@ export default function PosPage() {
               </DialogContent>
             </Dialog>
           </div>
-          <ScrollArea className="h-[60vh]">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredProducts.map((product) => (
-                <Card 
-                  key={product.id} 
-                  className="overflow-hidden relative group"
-                >
-                  <div 
-                     className="absolute top-2 right-2 z-10"
-                     onClick={(e) => e.stopPropagation()}
-                   >
-                     <DropdownMenu>
-                       <DropdownMenuTrigger asChild>
-                         <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
-                           <MoreVertical className="h-4 w-4" />
-                         </Button>
-                       </DropdownMenuTrigger>
-                       <DropdownMenuContent align="end">
-                         <DropdownMenuItem onClick={() => handleEditClick(product)}>
-                           تعديل المنتج
-                         </DropdownMenuItem>
-                         <DropdownMenuSeparator />
-                         <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive focus:text-destructive">
-                           حذف المنتج
-                         </DropdownMenuItem>
-                       </DropdownMenuContent>
-                     </DropdownMenu>
-                   </div>
-                  <CardContent 
-                    className="p-4 flex flex-col items-start justify-center h-full cursor-pointer"
-                    onClick={() => addToCart(product)}
-                   >
-                    <p className="font-semibold text-sm truncate w-full">{product.name}</p>
-                    <p className="text-sm text-muted-foreground">{product.sellingPrice.toFixed(2)} د.ج</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </ScrollArea>
+           {isClient ? (
+              <ScrollArea className="h-[60vh]">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {filteredProducts.map((product) => (
+                    <Card 
+                      key={product.id} 
+                      className="overflow-hidden relative group"
+                    >
+                      <div 
+                         className="absolute top-2 right-2 z-10"
+                         onClick={(e) => e.stopPropagation()}
+                       >
+                         <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
+                               <MoreVertical className="h-4 w-4" />
+                             </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end">
+                             <DropdownMenuItem onClick={() => handleEditClick(product)}>
+                               تعديل المنتج
+                             </DropdownMenuItem>
+                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive focus:text-destructive">
+                               حذف المنتج
+                             </DropdownMenuItem>
+                           </DropdownMenuContent>
+                         </DropdownMenu>
+                       </div>
+                      <CardContent 
+                        className="p-4 flex flex-col items-start justify-center h-full cursor-pointer"
+                        onClick={() => addToCart(product)}
+                       >
+                        <p className="font-semibold text-sm truncate w-full">{product.name}</p>
+                        <p className="text-sm text-muted-foreground">{product.sellingPrice.toFixed(2)} د.ج</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+             ) : (
+                <div className="rounded-md border h-[60vh] flex items-center justify-center">
+                    <p>جار تحميل المنتجات...</p>
+                </div>
+             )}
         </div>
         <div>
           <Card className="overflow-hidden">

@@ -46,6 +46,7 @@ const productSchema = z.object({
 
 export default function InventoryPage() {
   const { products, setProducts } = useApp();
+  const [isClient, setIsClient] = React.useState(false);
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
   const [openDelete, setOpenDelete] = React.useState(false);
@@ -55,6 +56,10 @@ export default function InventoryPage() {
   const [editProduct, setEditProduct] = React.useState<Partial<Product>>({});
 
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
  const handleSave = () => {
     const result = productSchema.safeParse({
@@ -226,12 +231,18 @@ export default function InventoryPage() {
           </Dialog>
         </div>
       </div>
-      <DataTable
-        columns={columns}
-        data={products}
-        filterColumnId="name"
-        filterPlaceholder="تصفية المنتجات..."
-      />
+      {isClient ? (
+        <DataTable
+            columns={columns}
+            data={products}
+            filterColumnId="name"
+            filterPlaceholder="تصفية المنتجات..."
+        />
+       ) : (
+            <div className="rounded-md border h-96 flex items-center justify-center">
+                <p>جار تحميل البيانات...</p>
+            </div>
+       )}
 
        {/* Edit Product Dialog */}
        {selectedProduct && (

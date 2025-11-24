@@ -40,6 +40,7 @@ type CartItemData = {
 
 export default function CustomersPage() {
   const { customers, setCustomers, setTransactions, setProducts } = useApp();
+  const [isClient, setIsClient] = React.useState(false);
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openPayment, setOpenPayment] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
@@ -65,6 +66,7 @@ export default function CustomersPage() {
 
   
   React.useEffect(() => {
+    setIsClient(true);
     if (debtAmount > 0) {
       setOpenAdd(true);
     }
@@ -263,12 +265,18 @@ export default function CustomersPage() {
           </Dialog>
         </div>
       </div>
-      <DataTable
-        columns={columns}
-        data={customers}
-        filterColumnId="name"
-        filterPlaceholder="تصفية العملاء..."
-      />
+       {isClient ? (
+        <DataTable
+            columns={columns}
+            data={customers}
+            filterColumnId="name"
+            filterPlaceholder="تصفية العملاء..."
+        />
+        ) : (
+            <div className="rounded-md border h-96 flex items-center justify-center">
+                <p>جار تحميل البيانات...</p>
+            </div>
+        )}
 
        {/* Add Payment Dialog */}
       {selectedCustomer && (

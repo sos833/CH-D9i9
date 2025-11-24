@@ -23,7 +23,12 @@ import { Separator } from "@/components/ui/separator";
 
 export default function TransactionsPage() {
   const { transactions } = useApp();
+  const [isClient, setIsClient] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleViewDetails = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -34,12 +39,18 @@ export default function TransactionsPage() {
   return (
     <AppLayout>
       <PageHeader title="المعاملات" description="عرض جميع المعاملات والمبيعات المسجلة." />
-      <DataTable
-        columns={transactionColumns}
-        data={transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
-        filterColumnId="customerName"
-        filterPlaceholder="تصفية حسب اسم العميل..."
-      />
+      {isClient ? (
+        <DataTable
+            columns={transactionColumns}
+            data={transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
+            filterColumnId="customerName"
+            filterPlaceholder="تصفية حسب اسم العميل..."
+        />
+       ) : (
+            <div className="rounded-md border h-96 flex items-center justify-center">
+                <p>جار تحميل البيانات...</p>
+            </div>
+       )}
 
       {selectedTransaction && (
         <Dialog open={!!selectedTransaction} onOpenChange={(isOpen) => !isOpen && setSelectedTransaction(null)}>
