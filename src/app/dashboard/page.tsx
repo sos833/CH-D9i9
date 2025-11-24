@@ -6,7 +6,7 @@ import PageHeader from '@/components/page-header';
 import StatCard from '@/components/stat-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Users, CreditCard, Activity, Power, TrendingUp } from 'lucide-react';
+import { DollarSign, Users, CreditCard, Activity, Power } from 'lucide-react';
 import OverviewChart from './components/overview-chart';
 import {
   Dialog,
@@ -32,7 +32,6 @@ const summarySchema = z.object({
   income: z.coerce.number().min(0, "المدخلات يجب أن تكون رقمًا موجبًا."),
   expenses: z.coerce.number().min(0, "المخرجات يجب أن تكون رقمًا موجبًا."),
   profit: z.coerce.number(), // Can be negative
-  newDebts: z.coerce.number().min(0, "الديون يجب أن تكون رقمًا موجبًا."),
 });
 
 
@@ -46,7 +45,7 @@ export default function DashboardPage() {
     setIsClient(true);
   }, []);
   
-  const [summary, setSummary] = React.useState({ income: '', expenses: '', profit: '', newDebts: ''});
+  const [summary, setSummary] = React.useState({ income: '', expenses: '', profit: '' });
 
   const totalDebt = customers.reduce((sum, customer) => sum + customer.totalDebt, 0);
   
@@ -71,7 +70,6 @@ export default function DashboardPage() {
         income: summary.income,
         expenses: summary.expenses,
         profit: summary.profit,
-        newDebts: summary.newDebts
     });
 
     if (!result.success) {
@@ -105,7 +103,7 @@ export default function DashboardPage() {
       description: "تم حفظ ملخص نهاية اليوم بنجاح.",
     });
     setOpen(false); // Close the dialog
-    setSummary({ income: '', expenses: '', profit: '', newDebts: ''});
+    setSummary({ income: '', expenses: '', profit: '' });
   };
   
   if (!isClient) {
@@ -149,7 +147,7 @@ export default function DashboardPage() {
                 <DialogHeader>
                   <DialogTitle>ملخص نهاية اليوم</DialogTitle>
                   <DialogDescription>
-                    أدخل تفاصيل الإيرادات والمصروفات والديون لهذا اليوم.
+                    أدخل تفاصيل الإيرادات والمصروفات لهذا اليوم.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -170,12 +168,6 @@ export default function DashboardPage() {
                       الربح
                     </Label>
                     <Input id="profit" type="number" placeholder="0.00" className="col-span-3" value={summary.profit} readOnly/>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="newDebts" className="text-right">
-                      ديون جديدة
-                    </Label>
-                    <Input id="newDebts" type="number" placeholder="0.00" className="col-span-3" value={summary.newDebts} onChange={handleSummaryChange}/>
                   </div>
                 </div>
                 <DialogFooter>

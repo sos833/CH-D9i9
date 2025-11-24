@@ -41,5 +41,4 @@ export type DailySummary = {
   income: number;
   expenses: number;
   profit: number;
-  newDebts: number;
 };
