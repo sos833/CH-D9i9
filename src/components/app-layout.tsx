@@ -7,7 +7,6 @@ import {
   ShoppingCart,
   Package,
   Users,
-  LogOut,
   PanelLeft,
   Search,
 } from 'lucide-react';
@@ -21,24 +20,12 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
-  SidebarInset,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const navItems = [
   { href: '/dashboard', icon: <LayoutDashboard />, label: 'لوحة المعلومات' },
@@ -49,7 +36,6 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
 
   return (
     <SidebarProvider>
@@ -83,20 +69,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               ))}
             </SidebarMenu>
           </SidebarContent>
-          <SidebarFooter>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{ children: 'تسجيل الخروج', side: 'left' }}>
-                  <Link href="/login">
-                    <LogOut />
-                    <span>تسجيل الخروج</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
         </Sidebar>
-        <div className="flex flex-col sm:gap-4 sm:py-4 sm:pr-14">
+        <div className="flex flex-col sm:gap-4 sm:py-4 lg:pr-14">
           <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
             <Sheet>
               <SheetTrigger asChild>
@@ -137,30 +111,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
               />
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="overflow-hidden rounded-full"
-                >
-                  <Avatar>
-                    {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt={userAvatar.description} data-ai-hint={userAvatar.imageHint} width={40} height={40}/>}
-                    <AvatarFallback>DZ</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>حسابي</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>الإعدادات</DropdownMenuItem>
-                <DropdownMenuItem>الدعم</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Link href="/login">تسجيل الخروج</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </header>
           <main className="flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
             {children}
