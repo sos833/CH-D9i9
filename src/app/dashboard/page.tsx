@@ -40,6 +40,11 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const { customers, transactions, dailySummaries, setDailySummaries } = useApp();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const [summary, setSummary] = React.useState({ income: '', expenses: '', profit: '', newDebts: ''});
 
@@ -101,6 +106,28 @@ export default function DashboardPage() {
     setOpen(false); // Close the dialog
     setSummary({ income: '', expenses: '', profit: '', newDebts: ''});
   };
+  
+  if (!isClient) {
+    // Render a loading state or skeleton on the server
+    return (
+       <AppLayout>
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center justify-between">
+               <PageHeader title="لوحة المعلومات" description="نظرة عامة على أداء متجرك." />
+            </div>
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card><CardContent className="p-6 h-28"></CardContent></Card>
+              <Card><CardContent className="p-6 h-28"></CardContent></Card>
+              <Card><CardContent className="p-6 h-28"></CardContent></Card>
+              <Card><CardContent className="p-6 h-28"></CardContent></Card>
+            </div>
+             <div className="grid gap-4 grid-cols-1">
+                <Card><CardContent className="p-6 h-96"></CardContent></Card>
+            </div>
+          </div>
+       </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
