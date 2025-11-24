@@ -32,6 +32,7 @@ export type Transaction = {
 
 export type StoreSettings = {
   storeName: string;
+  initialCash: number;
   initialSetupDone: boolean;
 };
 
@@ -41,4 +42,10 @@ export type DailySummary = {
   income: number;
   expenses: number;
   profit: number;
+};
+
+export type CashWithdrawal = {
+  id: string;
+  date: string;
+  amount: number;
 };

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { Product, Customer, Transaction, StoreSettings, DailySummary } from '@/lib/types';
+import type { Product, Customer, Transaction, StoreSettings, DailySummary, CashWithdrawal } from '@/lib/types';
 
 interface AppContextType {
   products: Product[];
@@ -15,6 +15,8 @@ interface AppContextType {
   setStoreSettings: React.Dispatch<React.SetStateAction<StoreSettings>>;
   dailySummaries: DailySummary[];
   setDailySummaries: React.Dispatch<React.SetStateAction<DailySummary[]>>;
+  cashWithdrawals: CashWithdrawal[];
+  setCashWithdrawals: React.Dispatch<React.SetStateAction<CashWithdrawal[]>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -24,15 +26,10 @@ const getInitialState = <T,>(key: string, fallback: T): T => {
     const storedValue = localStorage.getItem(key);
     if (storedValue) {
       try {
-        // A simple migration for old data structure if needed.
-        // For example, if a new required field was added to a type.
-        // This is a placeholder for any future data migrations.
         const parsed = JSON.parse(storedValue);
         return parsed;
       } catch (e) {
         console.error(`Error parsing localStorage key "${key}":`, e);
-        // If parsing fails, it might be due to old data format.
-        // Clearing the specific item can be a recovery strategy.
         localStorage.removeItem(key); 
         return fallback;
       }
@@ -47,8 +44,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [customers, setCustomers] = useState<Customer[]>(() => getInitialState('customers', []));
   const [transactions, setTransactions] = useState<Transaction[]>(() => getInitialState('transactions', []));
   const [dailySummaries, setDailySummaries] = useState<DailySummary[]>(() => getInitialState('dailySummaries', []));
+  const [cashWithdrawals, setCashWithdrawals] = useState<CashWithdrawal[]>(() => getInitialState('cashWithdrawals', []));
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => getInitialState('storeSettings', {
     storeName: '',
+    initialCash: 0,
     initialSetupDone: false,
   }));
 
@@ -71,6 +70,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     localStorage.setItem('storeSettings', JSON.stringify(storeSettings));
   }, [storeSettings]);
+  
+  useEffect(() => {
+    localStorage.setItem('cashWithdrawals', JSON.stringify(cashWithdrawals));
+  }, [cashWithdrawals]);
 
   return (
     <AppContext.Provider value={{ 
@@ -78,7 +81,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       customers, setCustomers,
       transactions, setTransactions,
       storeSettings, setStoreSettings,
-      dailySummaries, setDailySummaries
+      dailySummaries, setDailySummaries,
+      cashWithdrawals, setCashWithdrawals,
     }}>
       {children}
     </AppContext.Provider>

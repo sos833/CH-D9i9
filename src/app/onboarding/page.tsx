@@ -23,9 +23,12 @@ export default function OnboardingPage() {
   const { setStoreSettings } = useApp();
   const { toast } = useToast();
   const [storeName, setStoreName] = React.useState('');
+  const [initialCash, setInitialCash] = React.useState('');
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    
+    const cashAmount = parseFloat(initialCash) || 0;
 
     if (!storeName.trim()) {
       toast({
@@ -38,6 +41,7 @@ export default function OnboardingPage() {
     
     setStoreSettings({
       storeName: storeName,
+      initialCash: cashAmount,
       initialSetupDone: true,
     });
     
@@ -59,10 +63,10 @@ export default function OnboardingPage() {
             </div>
             <CardTitle className="text-2xl">مرحبًا بك في دفتر دي زاد</CardTitle>
             <CardDescription>
-              لنقم بإعداد حسابك. أدخل اسم متجرك للبدء.
+              لنقم بإعداد حسابك. أدخل تفاصيل متجرك للبدء.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="store-name">اسم المحل</Label>
               <Input
@@ -72,6 +76,19 @@ export default function OnboardingPage() {
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
               />
+            </div>
+             <div className="grid gap-2">
+              <Label htmlFor="initial-cash">صندوق النقد الأولي (لاكاس)</Label>
+              <Input
+                id="initial-cash"
+                type="number"
+                placeholder="0.00"
+                value={initialCash}
+                onChange={(e) => setInitialCash(e.target.value)}
+              />
+               <p className="text-xs text-muted-foreground">
+                أدخل المبلغ النقدي الموجود حاليًا في صندوقك. اتركه فارغًا إذا كان صفرًا.
+              </p>
             </div>
           </CardContent>
           <CardFooter>
