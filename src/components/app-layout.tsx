@@ -20,6 +20,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarInset,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <div className="flex min-h-screen w-full bg-muted/40">
         <Sidebar
           side="right"
           className="hidden border-l bg-sidebar text-sidebar-foreground lg:block"
@@ -70,7 +71,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <div className="flex flex-col lg:pr-14">
+        <SidebarInset>
           <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
             <Sheet>
               <SheetTrigger asChild>
@@ -115,7 +116,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="flex flex-1 flex-col p-4 sm:px-6 sm:py-4">
             {children}
           </main>
-        </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );
