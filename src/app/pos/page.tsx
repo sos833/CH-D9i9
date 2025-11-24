@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { mockProducts } from "@/lib/data";
-import { Search, CreditCard, DollarSign, MoreVertical } from "lucide-react";
+import { Search, CreditCard, DollarSign, MoreVertical, Plus, Minus, X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import type { Product } from "@/lib/types";
@@ -39,6 +39,7 @@ export default function PosPage() {
 
   const [openEdit, setOpenEdit] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -50,6 +51,22 @@ export default function PosPage() {
       }
       return [...prevCart, { ...product, quantity: 1 }];
     });
+  };
+
+  const updateQuantity = (productId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
+    } else {
+      setCart((prevCart) =>
+        prevCart.map((item) =>
+          item.id === productId ? { ...item, quantity: newQuantity } : item
+        )
+      );
+    }
+  };
+
+  const clearCart = () => {
+    setCart([]);
   };
 
   const total = cart.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
@@ -69,7 +86,7 @@ export default function PosPage() {
       description: `تم استلام مبلغ ${total.toFixed(2)} د.ج نقدًا.`,
     });
     // This should also update dashboard stats, but for now we clear cart
-    setCart([]);
+    clearCart();
   };
 
   const handleCreditPayment = () => {
@@ -83,7 +100,7 @@ export default function PosPage() {
     }
     const debtAmount = total.toFixed(2);
     // Clear cart and navigate
-    setCart([]);
+    clearCart();
     router.push(`/customers?debt=${debtAmount}`);
   };
   
@@ -102,6 +119,10 @@ export default function PosPage() {
     setSelectedProduct(null);
   };
 
+  const filteredProducts = mockProducts.filter(product => 
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.barcode.includes(searchQuery)
+  );
 
   return (
     <AppLayout>
@@ -112,11 +133,13 @@ export default function PosPage() {
             <Input
               placeholder="البحث عن منتج بالاسم أو الباركود..."
               className="w-full pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <ScrollArea className="h-[60vh]">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {mockProducts.map((product) => (
+              {filteredProducts.map((product) => (
                 <Card 
                   key={product.id} 
                   className="overflow-hidden relative group"
@@ -152,25 +175,40 @@ export default function PosPage() {
         </div>
         <div>
           <Card className="overflow-hidden">
-            <CardHeader className="flex flex-row items-start bg-muted/50">
-              <div className="grid gap-0.5">
-                <CardTitle className="group flex items-center gap-2 text-lg">
-                  السلة
-                </CardTitle>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between bg-muted/50">
+              <CardTitle className="group flex items-center gap-2 text-lg">
+                السلة
+              </CardTitle>
+               {cart.length > 0 && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearCart}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <span className="sr-only">إفراغ السلة</span>
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="p-6 text-sm">
               <ScrollArea className="h-[40vh]">
                 <div className="grid gap-3">
-                  <div className="font-semibold">تفاصيل الطلب</div>
                   {cart.length > 0 ? (
-                    <ul className="grid gap-3">
+                    <ul className="grid gap-4">
                       {cart.map(item => (
-                         <li key={item.id} className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            {item.name} <span>× {item.quantity}</span>
+                         <li key={item.id} className="flex items-center justify-between gap-4">
+                          <div className="flex-1 truncate">
+                             <span className="font-medium">{item.name}</span>
+                             <p className="text-xs text-muted-foreground">{item.sellingPrice.toFixed(2)} د.ج</p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                              <Minus className="h-3.5 w-3.5" />
+                            </Button>
+                            <span className="w-6 text-center">{item.quantity}</span>
+                            <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                          <span className="w-20 text-left font-semibold">
+                            {(item.sellingPrice * item.quantity).toFixed(2)} د.ج
                           </span>
-                          <span>{(item.sellingPrice * item.quantity).toFixed(2)} د.ج</span>
                         </li>
                       ))}
                     </ul>
