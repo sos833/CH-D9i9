@@ -1,3 +1,5 @@
+"use client";
+
 import AppLayout from '@/components/app-layout';
 import PageHeader from '@/components/page-header';
 import StatCard from '@/components/stat-card';
@@ -17,16 +19,31 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import React from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function DashboardPage() {
+  const { toast } = useToast();
+  const [open, setOpen] = React.useState(false);
+
+  const handleSave = () => {
+    // Here you would typically save the data to your backend
+    console.log("Saving end of day summary...");
+    toast({
+      title: "تم الحفظ",
+      description: "تم حفظ ملخص نهاية اليوم بنجاح.",
+    });
+    setOpen(false); // Close the dialog
+  };
+
   return (
     <AppLayout>
       <div className="flex-1 space-y-4">
         <div className="flex items-center justify-between">
           <PageHeader title="لوحة المعلومات" description="نظرة عامة على أداء متجرك." />
           <div className="ml-auto flex items-center gap-2">
-            <Dialog>
+            <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-8 gap-1">
                   <Power className="h-3.5 w-3.5" />
@@ -74,7 +91,7 @@ export default function DashboardPage() {
                       إلغاء
                     </Button>
                   </DialogClose>
-                  <Button type="submit">حفظ</Button>
+                  <Button type="button" onClick={handleSave}>حفظ</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
