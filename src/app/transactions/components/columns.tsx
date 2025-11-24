@@ -19,6 +19,27 @@ type ColumnsProps = {
   onViewDetails: (transaction: Transaction) => void;
 };
 
+const getPaymentMethodLabel = (method: 'cash' | 'credit', items: Transaction['items']) => {
+    if (items.some(item => item.productId === 'DEBT_PAYMENT')) {
+        return 'دفعة دين';
+    }
+    if (method === 'credit') {
+        return 'دين';
+    }
+    return 'نقدي';
+};
+
+const getPaymentMethodVariant = (method: 'cash' | 'credit', items: Transaction['items']) => {
+    if (items.some(item => item.productId === 'DEBT_PAYMENT')) {
+        return 'default'; // Or another color like 'success' if you define it
+    }
+    if (method === 'credit') {
+        return 'destructive';
+    }
+    return 'secondary';
+}
+
+
 export const columns = ({ onViewDetails }: ColumnsProps): ColumnDef<Transaction>[] => [
   {
     accessorKey: "date",
@@ -42,6 +63,10 @@ export const columns = ({ onViewDetails }: ColumnsProps): ColumnDef<Transaction>
     accessorKey: "customerName",
     header: "العميل",
     cell: ({ row }) => {
+        const transaction = row.original;
+        if (transaction.items.some(item => item.productId === 'DEBT_PAYMENT')) {
+            return <span>{transaction.customerName}</span>;
+        }
         return <span>{row.getValue("customerName") || "بيع نقدي"}</span>
     }
   },
@@ -60,12 +85,12 @@ export const columns = ({ onViewDetails }: ColumnsProps): ColumnDef<Transaction>
   },
   {
     accessorKey: "paymentMethod",
-    header: "طريقة الدفع",
+    header: "نوع المعاملة",
     cell: ({ row }) => {
-      const method = row.getValue("paymentMethod")
+      const transaction = row.original;
       return (
-        <Badge variant={method === 'credit' ? 'destructive' : 'secondary'}>
-          {method === 'credit' ? 'دين' : 'نقدي'}
+        <Badge variant={getPaymentMethodVariant(transaction.paymentMethod, transaction.items)}>
+          {getPaymentMethodLabel(transaction.paymentMethod, transaction.items)}
         </Badge>
       )
     },
@@ -92,3 +117,5 @@ export const columns = ({ onViewDetails }: ColumnsProps): ColumnDef<Transaction>
     },
   },
 ]
+
+    

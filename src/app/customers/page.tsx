@@ -39,7 +39,7 @@ type CartItemData = {
 }
 
 export default function CustomersPage() {
-  const { customers, setCustomers, setTransactions, setProducts } = useApp();
+  const { customers, setCustomers, transactions, setTransactions, setProducts } = useApp();
   const [isClient, setIsClient] = React.useState(false);
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openPayment, setOpenPayment] = React.useState(false);
@@ -145,7 +145,25 @@ export default function CustomersPage() {
        toast({ variant: "destructive", title: "خطأ", description: "المبلغ المدفوع أكبر من الدين." });
       return;
     }
+
+    // 1. Create a transaction for the debt payment
+    const paymentTransaction: Transaction = {
+      id: `TXN${Date.now()}`,
+      date: new Date().toISOString(),
+      items: [{
+        productId: 'DEBT_PAYMENT',
+        productName: `دفعة دين - ${selectedCustomer.name}`,
+        quantity: 1,
+        price: amount,
+      }],
+      total: amount,
+      paymentMethod: 'cash', // Debt payment is a cash transaction
+      customerId: selectedCustomer.id,
+      customerName: selectedCustomer.name,
+    };
+    setTransactions(prev => [...prev, paymentTransaction]);
     
+    // 2. Update customer's debt
     const newTotalDebt = selectedCustomer.totalDebt - amount;
 
     if (newTotalDebt <= 0) {
@@ -153,7 +171,7 @@ export default function CustomersPage() {
         setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
         toast({
             title: "تم تسديد الدين",
-            description: `تم تسديد دين العميل ${selectedCustomer.name} بالكامل.`,
+            description: `تم تسديد دين العميل ${selectedCustomer.name} بالكامل وإضافته إلى الصندوق.`,
         });
     } else {
         // Otherwise, just update the debt
@@ -164,7 +182,7 @@ export default function CustomersPage() {
         ));
          toast({
           title: "تمت العملية",
-          description: `تمت إضافة دفعة بقيمة ${amount} د.ج للعميل ${selectedCustomer.name}.`,
+          description: `تمت إضافة دفعة بقيمة ${amount.toFixed(2)} د.ج للعميل ${selectedCustomer.name} وإضافتها إلى الصندوق.`,
         });
     }
     
@@ -202,6 +220,14 @@ export default function CustomersPage() {
             ? { ...c, name: editCustomerName, phone: editCustomerPhone } 
             : c
      ));
+     
+     // also update customerName in past credit transactions
+     setTransactions(prev => prev.map(t =>
+        t.customerId === selectedCustomer.id && t.paymentMethod === 'credit'
+            ? { ...t, customerName: editCustomerName }
+            : t
+     ));
+
 
      toast({
       title: "تم التحديث",
@@ -386,3 +412,5 @@ export default function CustomersPage() {
     </AppLayout>
   );
 }
+
+    
