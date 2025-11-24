@@ -50,6 +50,7 @@ export default function DashboardPage() {
 
   const totalDebt = customers.reduce((sum, customer) => sum + customer.totalDebt, 0);
   
+  // These calculations will now re-run whenever `transactions` changes.
   const todaySales = transactions.filter(t => isToday(parseISO(t.date)));
   const todayRevenue = todaySales.filter(t => t.paymentMethod === 'cash').reduce((sum, t) => sum + t.total, 0);
 
