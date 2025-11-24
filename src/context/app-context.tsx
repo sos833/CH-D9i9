@@ -3,7 +3,6 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Product, Customer, Transaction, StoreSettings, DailySummary } from '@/lib/types';
-import { mockProducts, mockCustomers } from '@/lib/data';
 
 interface AppContextType {
   products: Product[];
@@ -25,9 +24,16 @@ const getInitialState = <T,>(key: string, fallback: T): T => {
     const storedValue = localStorage.getItem(key);
     if (storedValue) {
       try {
-        return JSON.parse(storedValue);
+        // A simple migration for old data structure if needed.
+        // For example, if a new required field was added to a type.
+        // This is a placeholder for any future data migrations.
+        const parsed = JSON.parse(storedValue);
+        return parsed;
       } catch (e) {
         console.error(`Error parsing localStorage key "${key}":`, e);
+        // If parsing fails, it might be due to old data format.
+        // Clearing the specific item can be a recovery strategy.
+        localStorage.removeItem(key); 
         return fallback;
       }
     }
@@ -35,9 +41,10 @@ const getInitialState = <T,>(key: string, fallback: T): T => {
   return fallback;
 };
 
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [products, setProducts] = useState<Product[]>(() => getInitialState('products', mockProducts));
-  const [customers, setCustomers] = useState<Customer[]>(() => getInitialState('customers', mockCustomers));
+  const [products, setProducts] = useState<Product[]>(() => getInitialState('products', []));
+  const [customers, setCustomers] = useState<Customer[]>(() => getInitialState('customers', []));
   const [transactions, setTransactions] = useState<Transaction[]>(() => getInitialState('transactions', []));
   const [dailySummaries, setDailySummaries] = useState<DailySummary[]>(() => getInitialState('dailySummaries', []));
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => getInitialState('storeSettings', {
