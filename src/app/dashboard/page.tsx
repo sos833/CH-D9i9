@@ -1,16 +1,26 @@
 import AppLayout from '@/components/app-layout';
 import PageHeader from '@/components/page-header';
 import StatCard from '@/components/stat-card';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Users, CreditCard, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DollarSign, Users, CreditCard, Activity, Power } from 'lucide-react';
 import OverviewChart from './components/overview-chart';
-import RecentSales from './components/recent-sales';
 
 export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="flex-1 space-y-4">
-        <PageHeader title="لوحة المعلومات" description="نظرة عامة على أداء متجرك." />
+        <div className="flex items-center justify-between">
+          <PageHeader title="لوحة المعلومات" description="نظرة عامة على أداء متجرك." />
+          <div className="ml-auto flex items-center gap-2">
+              <Button size="sm" className="h-8 gap-1">
+                <Power className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  نهاية اليوم
+                </span>
+              </Button>
+            </div>
+        </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard 
             title="إجمالي الإيرادات" 
@@ -37,24 +47,13 @@ export default function DashboardPage() {
             description="هذا الشهر" 
           />
         </div>
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+        <div className="grid gap-4 grid-cols-1">
           <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>نظرة عامة على الأرباح</CardTitle>
             </CardHeader>
             <CardContent className="pl-2">
               <OverviewChart />
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-3">
-            <CardHeader>
-              <CardTitle>المبيعات الأخيرة</CardTitle>
-              <CardDescription>
-                تم تسجيل 5 مبيعات جديدة هذا اليوم.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RecentSales />
             </CardContent>
           </Card>
         </div>

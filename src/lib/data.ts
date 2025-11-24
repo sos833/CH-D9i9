@@ -1,4 +1,4 @@
-import type { Product, Customer, Sale } from './types';
+import type { Product, Customer } from './types';
 
 export const mockProducts: Product[] = [
   { id: 'PROD001', name: 'Gaufrettes Amigo', barcode: '613000000001', stock: 150, costPrice: 15, sellingPrice: 20 },
@@ -16,12 +16,4 @@ export const mockCustomers: Customer[] = [
   { id: 'CUST003', name: 'Samir Khelifi', phone: '0666987654', totalDebt: 3250.50 },
   { id: 'CUST004', name: 'Fatima Hadjadj', phone: '0550112233', totalDebt: 780.00 },
   { id: 'CUST005', name: 'Mehdi Bouzid', phone: '0790445566', totalDebt: 120.00 },
-];
-
-export const mockRecentSales: Sale[] = [
-  { customerName: 'Lina Ait', customerInitials: 'LA', email: 'lina.ait@example.com', amount: '+ د.ج 1,999.00' },
-  { customerName: 'Yacine Djebbar', customerInitials: 'YD', email: 'yacine.d@example.com', amount: '+ د.ج 39.00' },
-  { customerName: 'Sofia Cherif', customerInitials: 'SC', email: 'sofia.c@example.com', amount: '+ د.ج 299.00' },
-  { customerName: 'Mehdi Laouar', customerInitials: 'ML', email: 'mehdi.l@example.com', amount: '+ د.ج 99.00' },
-  { customerName: 'Amira Benali', customerInitials: 'AB', email: 'amira.b@example.com', amount: '+ د.ج 3,250.50' },
 ];

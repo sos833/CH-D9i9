@@ -26,10 +26,3 @@ export type Transaction = {
   paymentMethod: 'cash' | 'credit';
   customerId?: string;
 };
-
-export type Sale = {
-  customerName: string;
-  customerInitials: string;
-  email: string;
-  amount: string;
-};
