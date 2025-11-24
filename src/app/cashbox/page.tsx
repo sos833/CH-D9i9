@@ -41,13 +41,14 @@ export default function CashboxPage() {
     setIsClient(true);
   }, []);
 
-  const totalCashSales = transactions
+  const totalCashSales = (transactions || [])
     .filter(t => t.paymentMethod === 'cash')
     .reduce((sum, t) => sum + t.total, 0);
   
-  const totalWithdrawn = cashWithdrawals.reduce((sum, w) => sum + w.amount, 0);
+  const totalWithdrawn = (cashWithdrawals || []).reduce((sum, w) => sum + w.amount, 0);
 
-  const currentCashInBox = storeSettings.initialCash + totalCashSales - totalWithdrawn;
+  const initialCash = storeSettings?.initialCash || 0;
+  const currentCashInBox = initialCash + totalCashSales - totalWithdrawn;
 
   const handleSaveWithdrawal = () => {
     const result = withdrawalSchema.safeParse({ amount: withdrawalAmount });
@@ -77,7 +78,7 @@ export default function CashboxPage() {
       amount: amountToWithdraw,
     };
     
-    setCashWithdrawals(prev => [...prev, newWithdrawal]);
+    setCashWithdrawals(prev => [...(prev || []), newWithdrawal]);
     
     toast({
       title: "تم السحب بنجاح",
@@ -113,7 +114,7 @@ export default function CashboxPage() {
               <DialogHeader>
                 <DialogTitle>سحب أموال من الصندوق</DialogTitle>
                 <DialogDescription>
-                  أدخل المبلغ الذي تود سحبه. الرصيد الحالي: {currentCashInBox.toFixed(2)} د.ج
+                  الرصيد الحالي: {currentCashInBox.toFixed(2)} د.ج
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -148,7 +149,7 @@ export default function CashboxPage() {
             title="الرصيد الحالي في الصندوق" 
             value={`د.ج ${currentCashInBox.toFixed(2)}`}
             icon={<Banknote />} 
-            description={`يبدأ بـ ${storeSettings.initialCash.toFixed(2)} د.ج الأولي`}
+            description={`يبدأ بـ ${initialCash.toFixed(2)} د.ج الأولي`}
         />
         <StatCard 
             title="إجمالي المبيعات النقدية" 
@@ -160,7 +161,7 @@ export default function CashboxPage() {
             title="إجمالي المبالغ المسحوبة" 
             value={`د.ج ${totalWithdrawn.toFixed(2)}`}
             icon={<Banknote />} 
-            description={`${cashWithdrawals.length} عملية سحب`}
+            description={`${(cashWithdrawals || []).length} عملية سحب`}
         />
       </div>
 
@@ -168,7 +169,7 @@ export default function CashboxPage() {
         <h3 className="text-xl font-bold tracking-tight mb-4">سجل عمليات السحب</h3>
         <DataTable
             columns={withdrawalColumns}
-            data={cashWithdrawals.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
+            data={(cashWithdrawals || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
             filterColumnId="date" // Filtering might not be ideal here, but need to provide a prop
             filterPlaceholder="لا يوجد فلتر لهذه القائمة"
         />
