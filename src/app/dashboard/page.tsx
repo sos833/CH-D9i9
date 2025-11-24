@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import React from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 
 export default function DashboardPage() {
@@ -124,14 +125,45 @@ export default function DashboardPage() {
           />
         </div>
         <div className="grid gap-4 grid-cols-1">
-          <Card className="lg:col-span-4">
-            <CardHeader>
-              <CardTitle>نظرة عامة على الأرباح</CardTitle>
-            </CardHeader>
-            <CardContent className="pl-2">
-              <OverviewChart />
-            </CardContent>
-          </Card>
+          <Tabs defaultValue="month" className="space-y-4">
+            <div className="flex items-center">
+              <TabsList>
+                <TabsTrigger value="day">اليوم</TabsTrigger>
+                <TabsTrigger value="week">الأسبوع</TabsTrigger>
+                <TabsTrigger value="month">الشهر</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="day" className="space-y-4">
+              <Card className="lg:col-span-4">
+                <CardHeader>
+                  <CardTitle>نظرة عامة على أرباح اليوم</CardTitle>
+                </CardHeader>
+                <CardContent className="pl-2">
+                  <OverviewChart viewMode="day" />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="week" className="space-y-4">
+              <Card className="lg:col-span-4">
+                <CardHeader>
+                  <CardTitle>نظرة عامة على أرباح الأسبوع</CardTitle>
+                </CardHeader>
+                <CardContent className="pl-2">
+                  <OverviewChart viewMode="week" />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="month" className="space-y-4">
+              <Card className="lg:col-span-4">
+                <CardHeader>
+                  <CardTitle>نظرة عامة على أرباح الشهر</CardTitle>
+                </CardHeader>
+                <CardContent className="pl-2">
+                  <OverviewChart viewMode="month" />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </AppLayout>
