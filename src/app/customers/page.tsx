@@ -21,11 +21,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useSearchParams } from 'next/navigation';
 
 
 export default function CustomersPage() {
   const [open, setOpen] = React.useState(false);
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const debtAmount = searchParams.get('debt');
+
+  React.useEffect(() => {
+    if (debtAmount) {
+      setOpen(true);
+    }
+  }, [debtAmount]);
 
   const handleSave = () => {
     // In a real app, you'd handle form submission here
@@ -53,9 +62,9 @@ export default function CustomersPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>إضافة عميل جديد</DialogTitle>
+                <DialogTitle>{debtAmount ? 'إضافة دين لعميل' : 'إضافة عميل جديد'}</DialogTitle>
                 <DialogDescription>
-                  أدخل تفاصيل العميل الجديد لحفظه في القائمة.
+                 {debtAmount ? 'أدخل تفاصيل العميل لإضافة الدين.' : 'أدخل تفاصيل العميل الجديد لحفظه في القائمة.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -71,6 +80,14 @@ export default function CustomersPage() {
                   </Label>
                   <Input id="phone" placeholder="0XXXXXXXXX" className="col-span-3" />
                 </div>
+                {debtAmount && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="debt" className="text-right">
+                      قيمة الدين
+                    </Label>
+                    <Input id="debt" value={`${debtAmount} د.ج`} readOnly className="col-span-3" />
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <DialogClose asChild>
@@ -78,7 +95,7 @@ export default function CustomersPage() {
                     إلغاء
                   </Button>
                 </DialogClose>
-                <Button type="button" onClick={handleSave}>حفظ العميل</Button>
+                <Button type="button" onClick={handleSave}>{debtAmount ? 'حفظ الدين' : 'حفظ العميل'}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
