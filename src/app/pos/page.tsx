@@ -7,8 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { mockProducts } from "@/lib/data";
-import { Search, CreditCard, DollarSign, MoreVertical, Plus, Minus, X, Trash2 } from "lucide-react";
+import { Search, CreditCard, DollarSign, MoreVertical, Plus, Minus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import type { Product } from "@/lib/types";
@@ -28,6 +27,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useApp } from "@/context/app-context";
 
 
 type CartItem = Product & { quantity: number };
@@ -36,24 +36,56 @@ export default function PosPage() {
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+  const { products, setProducts } = useApp();
 
   const [openEdit, setOpenEdit] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
+  const [editProductDetails, setEditProductDetails] = React.useState<Partial<Product>>({});
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id);
       if (existingItem) {
-        return prevCart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
+        if (existingItem.quantity < product.stock) {
+           return prevCart.map((item) =>
+            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          );
+        } else {
+            toast({
+                variant: "destructive",
+                title: "نفذ المخزون",
+                description: `لا يوجد سوى ${product.stock} عناصر متبقية من ${product.name}.`,
+            });
+            return prevCart;
+        }
       }
-      return [...prevCart, { ...product, quantity: 1 }];
+      if (product.stock > 0) {
+        return [...prevCart, { ...product, quantity: 1 }];
+      } else {
+         toast({
+            variant: "destructive",
+            title: "نفذ المخزون",
+            description: `المنتج ${product.name} غير متوفر حاليًا.`,
+        });
+        return prevCart;
+      }
     });
   };
 
   const updateQuantity = (productId: string, newQuantity: number) => {
+    const productInStock = products.find(p => p.id === productId);
+    if (!productInStock) return;
+
+    if (newQuantity > productInStock.stock) {
+        toast({
+            variant: "destructive",
+            title: "نفذ المخزون",
+            description: `لا يوجد سوى ${productInStock.stock} عناصر متبقية من ${productInStock.name}.`,
+        });
+        newQuantity = productInStock.stock;
+    }
+
     if (newQuantity <= 0) {
       setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
     } else {
@@ -71,6 +103,22 @@ export default function PosPage() {
 
   const total = cart.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
 
+  const processSale = () => {
+    // Update stock in global context
+    setProducts(prevProducts => {
+      const newProducts = [...prevProducts];
+      cart.forEach(cartItem => {
+        const productIndex = newProducts.findIndex(p => p.id === cartItem.id);
+        if (productIndex !== -1) {
+          newProducts[productIndex].stock -= cartItem.quantity;
+        }
+      });
+      return newProducts;
+    });
+
+    clearCart();
+  };
+
   const handleCashPayment = () => {
     if (cart.length === 0) {
       toast({
@@ -80,13 +128,13 @@ export default function PosPage() {
       });
       return;
     }
-    // In a real app, you'd record this transaction
+    
+    processSale();
+
     toast({
       title: "تم الدفع",
       description: `تم استلام مبلغ ${total.toFixed(2)} د.ج نقدًا.`,
     });
-    // This should also update dashboard stats, but for now we clear cart
-    clearCart();
   };
 
   const handleCreditPayment = () => {
@@ -99,18 +147,26 @@ export default function PosPage() {
       return;
     }
     const debtAmount = total.toFixed(2);
-    // Clear cart and navigate
-    clearCart();
+    
+    processSale();
+
     router.push(`/customers?debt=${debtAmount}`);
   };
   
   const handleEditClick = (product: Product) => {
     setSelectedProduct(product);
+    setEditProductDetails({
+        name: product.name,
+        sellingPrice: product.sellingPrice,
+    });
     setOpenEdit(true);
   };
   
   const handleUpdate = () => {
-    // In a real app, you would handle form submission here
+    if (!selectedProduct) return;
+    
+    setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, ...editProductDetails } as Product : p));
+
     toast({
       title: "تم التحديث",
       description: "تم تحديث المنتج بنجاح.",
@@ -118,10 +174,16 @@ export default function PosPage() {
     setOpenEdit(false);
     setSelectedProduct(null);
   };
+  
+  const handleEditDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    const fieldName = id.replace('edit-', '');
+    setEditProductDetails(prev => ({ ...prev, [fieldName]: value }));
+  };
 
-  const filteredProducts = mockProducts.filter(product => 
+  const filteredProducts = products.filter(product => 
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.barcode.includes(searchQuery)
+    product.barcode?.includes(searchQuery)
   );
 
   return (
@@ -166,7 +228,7 @@ export default function PosPage() {
                     onClick={() => addToCart(product)}
                    >
                     <p className="font-semibold text-sm truncate w-full">{product.name}</p>
-                    <p className="text-sm text-muted-foreground">{product.sellingPrice} د.ج</p>
+                    <p className="text-sm text-muted-foreground">{product.sellingPrice.toFixed(2)} د.ج</p>
                   </CardContent>
                 </Card>
               ))}
@@ -241,6 +303,7 @@ export default function PosPage() {
         </div>
       </div>
        {/* Edit Product Dialog */}
+       {selectedProduct && (
        <Dialog open={openEdit} onOpenChange={setOpenEdit}>
         <DialogContent>
           <DialogHeader>
@@ -251,16 +314,16 @@ export default function PosPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-product-name" className="text-right">
+              <Label htmlFor="edit-name" className="text-right">
                 الاسم
               </Label>
-              <Input id="edit-product-name" defaultValue={selectedProduct?.name} className="col-span-3" />
+              <Input id="edit-name" value={editProductDetails.name || ''} onChange={handleEditDetailsChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-selling-price" className="text-right">
+              <Label htmlFor="edit-sellingPrice" className="text-right">
                 سعر البيع
               </Label>
-              <Input id="edit-selling-price" type="number" defaultValue={selectedProduct?.sellingPrice} className="col-span-3" />
+              <Input id="edit-sellingPrice" type="number" value={editProductDetails.sellingPrice || ''} onChange={handleEditDetailsChange} className="col-span-3" />
             </div>
           </div>
           <DialogFooter>
@@ -273,6 +336,7 @@ export default function PosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
     </AppLayout>
   );
 }

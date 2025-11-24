@@ -5,7 +5,6 @@ import PageHeader from "@/components/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { mockProducts } from "@/lib/data";
 import { columns as columnsDef } from "./components/columns";
 import React from "react";
 import {
@@ -32,26 +31,87 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@/lib/types";
+import { useApp } from "@/context/app-context";
+import { z } from "zod";
+
+
+const productSchema = z.object({
+    name: z.string().min(1, "اسم المنتج مطلوب"),
+    stock: z.coerce.number().min(0, "المخزون لا يمكن أن يكون سالبًا"),
+    costPrice: z.coerce.number().min(0, "سعر التكلفة لا يمكن أن يكون سالبًا"),
+    sellingPrice: z.coerce.number().min(0, "سعر البيع لا يمكن أن يكون سالبًا"),
+    barcode: z.string().optional(),
+});
+
 
 export default function InventoryPage() {
-  const [products, setProducts] = React.useState<Product[]>(mockProducts);
+  const { products, setProducts } = useApp();
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
   const [openDelete, setOpenDelete] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
+  
+  const [newProduct, setNewProduct] = React.useState({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
+  const [editProduct, setEditProduct] = React.useState<Partial<Product>>({});
+
   const { toast } = useToast();
 
-  const handleSave = () => {
-    // In a real app, you would handle form submission here
+ const handleSave = () => {
+    const result = productSchema.safeParse({
+        name: newProduct.name,
+        stock: newProduct.stock,
+        costPrice: newProduct.costPrice,
+        sellingPrice: newProduct.sellingPrice,
+        barcode: newProduct.barcode,
+    });
+
+    if (!result.success) {
+        toast({
+            variant: "destructive",
+            title: "خطأ في الإدخال",
+            description: result.error.errors[0].message,
+        });
+        return;
+    }
+    
+    const productToAdd: Product = {
+      id: `PROD${Date.now()}`,
+      name: result.data.name,
+      barcode: result.data.barcode || '',
+      stock: result.data.stock,
+      costPrice: result.data.costPrice,
+      sellingPrice: result.data.sellingPrice,
+    };
+    
+    setProducts(prev => [...prev, productToAdd]);
     toast({
       title: "تم الحفظ",
       description: "تمت إضافة المنتج بنجاح.",
     });
     setOpenAdd(false);
+    setNewProduct({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
   };
   
   const handleUpdate = () => {
-    // In a real app, you would handle form submission here
+    if (!selectedProduct) return;
+    
+    const result = productSchema.safeParse({
+        name: editProduct.name,
+        stock: editProduct.stock,
+        costPrice: editProduct.costPrice,
+        sellingPrice: editProduct.sellingPrice,
+    });
+
+    if (!result.success) {
+        toast({
+            variant: "destructive",
+            title: "خطأ في الإدخال",
+            description: result.error.errors[0].message,
+        });
+        return;
+    }
+
+    setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, ...result.data } as Product : p));
     toast({
       title: "تم التحديث",
       description: "تم تحديث المنتج بنجاح.",
@@ -62,6 +122,12 @@ export default function InventoryPage() {
 
   const handleEditClick = (product: Product) => {
     setSelectedProduct(product);
+    setEditProduct({
+        name: product.name,
+        stock: product.stock,
+        costPrice: product.costPrice,
+        sellingPrice: product.sellingPrice,
+    });
     setOpenEdit(true);
   };
 
@@ -82,6 +148,18 @@ export default function InventoryPage() {
   };
   
   const columns = columnsDef({ onEdit: handleEditClick, onDelete: handleDeleteClick });
+
+  const handleNewProductChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setNewProduct(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleEditProductChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    const fieldName = id.replace('edit-', '');
+    setEditProduct(prev => ({ ...prev, [fieldName]: value }));
+};
+
 
   return (
     <AppLayout>
@@ -106,34 +184,34 @@ export default function InventoryPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="product-name" className="text-right">
+                  <Label htmlFor="name" className="text-right">
                     الاسم
                   </Label>
-                  <Input id="product-name" placeholder="اسم المنتج" className="col-span-3" />
+                  <Input id="name" placeholder="اسم المنتج" className="col-span-3" value={newProduct.name} onChange={handleNewProductChange} />
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="barcode" className="text-right">
                     الباركود
                   </Label>
-                  <Input id="barcode" placeholder="الباركود (اختياري)" className="col-span-3" />
+                  <Input id="barcode" placeholder="الباركود (اختياري)" className="col-span-3" value={newProduct.barcode} onChange={handleNewProductChange} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="stock" className="text-right">
                     المخزون
                   </Label>
-                  <Input id="stock" type="number" placeholder="0" className="col-span-3" />
+                  <Input id="stock" type="number" placeholder="0" className="col-span-3" value={newProduct.stock} onChange={handleNewProductChange}/>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="cost-price" className="text-right">
+                  <Label htmlFor="costPrice" className="text-right">
                     سعر التكلفة
                   </Label>
-                  <Input id="cost-price" type="number" placeholder="0.00" className="col-span-3" />
+                  <Input id="costPrice" type="number" placeholder="0.00" className="col-span-3" value={newProduct.costPrice} onChange={handleNewProductChange} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="selling-price" className="text-right">
+                  <Label htmlFor="sellingPrice" className="text-right">
                     سعر البيع
                   </Label>
-                  <Input id="selling-price" type="number" placeholder="0.00" className="col-span-3" />
+                  <Input id="sellingPrice" type="number" placeholder="0.00" className="col-span-3" value={newProduct.sellingPrice} onChange={handleNewProductChange} />
                 </div>
               </div>
               <DialogFooter>
@@ -167,28 +245,28 @@ export default function InventoryPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-product-name" className="text-right">
+                  <Label htmlFor="edit-name" className="text-right">
                     الاسم
                   </Label>
-                  <Input id="edit-product-name" defaultValue={selectedProduct?.name} className="col-span-3" />
+                  <Input id="edit-name" value={editProduct.name || ''} onChange={handleEditProductChange} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-selling-price" className="text-right">
+                  <Label htmlFor="edit-sellingPrice" className="text-right">
                     سعر البيع
                   </Label>
-                  <Input id="edit-selling-price" type="number" defaultValue={selectedProduct?.sellingPrice} className="col-span-3" />
+                  <Input id="edit-sellingPrice" type="number" value={editProduct.sellingPrice || ''} onChange={handleEditProductChange} className="col-span-3" />
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-cost-price" className="text-right">
+                  <Label htmlFor="edit-costPrice" className="text-right">
                     سعر التكلفة
                   </Label>
-                  <Input id="edit-cost-price" type="number" defaultValue={selectedProduct?.costPrice} className="col-span-3" />
+                  <Input id="edit-costPrice" type="number" value={editProduct.costPrice || ''} onChange={handleEditProductChange} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-stock" className="text-right">
                     المخزون
                   </Label>
-                  <Input id="edit-stock" type="number" defaultValue={selectedProduct?.stock} className="col-span-3" />
+                  <Input id="edit-stock" type="number" value={editProduct.stock || ''} onChange={handleEditProductChange} className="col-span-3" />
                 </div>
               </div>
               <DialogFooter>

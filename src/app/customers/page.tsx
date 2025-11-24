@@ -6,7 +6,6 @@ import PageHeader from "@/components/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { mockCustomers } from "@/lib/data";
 import { columns as columnsDef } from "./components/columns";
 import {
   Dialog,
@@ -23,15 +22,29 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from 'next/navigation';
 import type { Customer } from "@/lib/types";
+import { useApp } from "@/context/app-context";
+import { z } from "zod";
+
+const customerSchema = z.object({
+  name: z.string().min(1, "الاسم مطلوب"),
+  phone: z.string().min(1, "الهاتف مطلوب"),
+});
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = React.useState<Customer[]>(mockCustomers);
+  const { customers, setCustomers } = useApp();
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openPayment, setOpenPayment] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
   const [openDetails, setOpenDetails] = React.useState(false);
   const [selectedCustomer, setSelectedCustomer] = React.useState<Customer | null>(null);
   const [paymentAmount, setPaymentAmount] = React.useState("");
+
+  const [newCustomerName, setNewCustomerName] = React.useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = React.useState("");
+  
+  const [editCustomerName, setEditCustomerName] = React.useState("");
+  const [editCustomerPhone, setEditCustomerPhone] = React.useState("");
+
 
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -44,12 +57,32 @@ export default function CustomersPage() {
   }, [debtAmount]);
 
   const handleSaveCustomer = () => {
-    // In a real app, you'd handle form submission here
+    const result = customerSchema.safeParse({ name: newCustomerName, phone: newCustomerPhone });
+    if (!result.success) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في الإدخال",
+        description: result.error.errors[0].message,
+      });
+      return;
+    }
+
+    const newCustomer: Customer = {
+      id: `CUST${Date.now()}`,
+      name: newCustomerName,
+      phone: newCustomerPhone,
+      totalDebt: debtAmount ? parseFloat(debtAmount) : 0,
+    };
+    
+    setCustomers(prev => [...prev, newCustomer]);
+    
     toast({
       title: "تم الحفظ",
-      description: "تمت إضافة العميل بنجاح.",
+      description: `تمت إضافة العميل ${newCustomer.name} بنجاح.`,
     });
     setOpenAdd(false);
+    setNewCustomerName("");
+    setNewCustomerPhone("");
   };
   
   const handleAddPaymentClick = (customer: Customer) => {
@@ -83,6 +116,8 @@ export default function CustomersPage() {
   
   const handleEditClick = (customer: Customer) => {
     setSelectedCustomer(customer);
+    setEditCustomerName(customer.name);
+    setEditCustomerPhone(customer.phone);
     setOpenEdit(true);
   };
   
@@ -93,7 +128,23 @@ export default function CustomersPage() {
   
   const handleUpdateCustomer = () => {
      if (!selectedCustomer) return;
-     // Logic to update customer would go here
+     
+     const result = customerSchema.safeParse({ name: editCustomerName, phone: editCustomerPhone });
+      if (!result.success) {
+        toast({
+          variant: "destructive",
+          title: "خطأ في الإدخال",
+          description: result.error.errors[0].message,
+        });
+        return;
+      }
+     
+     setCustomers(customers.map(c => 
+        c.id === selectedCustomer.id 
+            ? { ...c, name: editCustomerName, phone: editCustomerPhone } 
+            : c
+     ));
+
      toast({
       title: "تم التحديث",
       description: "تم تحديث بيانات العميل بنجاح.",
@@ -135,13 +186,13 @@ export default function CustomersPage() {
                   <Label htmlFor="name" className="text-right">
                     الاسم
                   </Label>
-                  <Input id="name" placeholder="اسم العميل الكامل" className="col-span-3" />
+                  <Input id="name" placeholder="اسم العميل الكامل" className="col-span-3" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="phone" className="text-right">
                     الهاتف
                   </Label>
-                  <Input id="phone" placeholder="0XXXXXXXXX" className="col-span-3" />
+                  <Input id="phone" placeholder="0XXXXXXXXX" className="col-span-3" value={newCustomerPhone} onChange={e => setNewCustomerPhone(e.target.value)}/>
                 </div>
                 {debtAmount && (
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -220,13 +271,13 @@ export default function CustomersPage() {
                 <Label htmlFor="edit-customer-name" className="text-right">
                   الاسم
                 </Label>
-                <Input id="edit-customer-name" defaultValue={selectedCustomer?.name} className="col-span-3" />
+                <Input id="edit-customer-name" value={editCustomerName} onChange={e => setEditCustomerName(e.target.value)} className="col-span-3" />
               </div>
                <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-customer-phone" className="text-right">
                   الهاتف
                 </Label>
-                <Input id="edit-customer-phone" defaultValue={selectedCustomer?.phone} className="col-span-3" />
+                <Input id="edit-customer-phone" value={editCustomerPhone} onChange={e => setEditCustomerPhone(e.target.value)} className="col-span-3" />
               </div>
             </div>
             <DialogFooter>

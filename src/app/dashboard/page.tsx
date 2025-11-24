@@ -22,11 +22,15 @@ import { Label } from "@/components/ui/label"
 import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useApp } from '@/context/app-context';
 
 
 export default function DashboardPage() {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
+  const { customers, products } = useApp();
+
+  const totalDebt = customers.reduce((sum, customer) => sum + customer.totalDebt, 0);
 
   const handleSave = () => {
     // Here you would typically save the data to your backend
@@ -107,9 +111,9 @@ export default function DashboardPage() {
           />
           <StatCard 
             title="إجمالي الديون" 
-            value="د.ج 12,870.00" 
+            value={`د.ج ${totalDebt.toFixed(2)}`}
             icon={<CreditCard />} 
-            description="+180.1% عن الشهر الماضي" 
+            description={`${customers.filter(c => c.totalDebt > 0).length} عملاء مدينون`} 
           />
            <StatCard 
             title="مبيعات اليوم" 
@@ -119,9 +123,9 @@ export default function DashboardPage() {
           />
           <StatCard 
             title="عملاء جدد" 
-            value="+23" 
+            value={`+${customers.length}`}
             icon={<Users />} 
-            description="هذا الشهر" 
+            description="إجمالي العملاء" 
           />
         </div>
         <div className="grid gap-4 grid-cols-1">
