@@ -5,6 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, Users, CreditCard, Activity, Power } from 'lucide-react';
 import OverviewChart from './components/overview-chart';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
 
 export default function DashboardPage() {
   return (
@@ -13,13 +26,59 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <PageHeader title="لوحة المعلومات" description="نظرة عامة على أداء متجرك." />
           <div className="ml-auto flex items-center gap-2">
-              <Button size="sm" className="h-8 gap-1">
-                <Power className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  نهاية اليوم
-                </span>
-              </Button>
-            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" className="h-8 gap-1">
+                  <Power className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    نهاية اليوم
+                  </span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>ملخص نهاية اليوم</DialogTitle>
+                  <DialogDescription>
+                    أدخل تفاصيل الإيرادات والمصروفات والديون لهذا اليوم.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="daily-income" className="text-right">
+                      المدخلات
+                    </Label>
+                    <Input id="daily-income" type="number" placeholder="0.00" className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="expenses" className="text-right">
+                      المخرجات
+                    </Label>
+                    <Input id="expenses" type="number" placeholder="0.00" className="col-span-3" />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="profit" className="text-right">
+                      الربح
+                    </Label>
+                    <Input id="profit" type="number" placeholder="0.00" className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="debts" className="text-right">
+                      ديون جديدة
+                    </Label>
+                    <Input id="debts" type="number" placeholder="0.00" className="col-span-3" />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                      إلغاء
+                    </Button>
+                  </DialogClose>
+                  <Button type="submit">حفظ</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard 
@@ -34,7 +93,7 @@ export default function DashboardPage() {
             icon={<CreditCard />} 
             description="+180.1% عن الشهر الماضي" 
           />
-          <StatCard 
+           <StatCard 
             title="مبيعات اليوم" 
             value="+573" 
             icon={<Activity />} 
