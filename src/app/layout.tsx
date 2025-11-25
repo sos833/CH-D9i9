@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppProvider } from '@/context/app-context';
+import { FirebaseClientProvider } from '@/firebase';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
   title: 'دفتر دي زاد',
@@ -24,9 +26,12 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <AppProvider>
-          {children}
-        </AppProvider>
+        <FirebaseClientProvider>
+          <AppProvider>
+            {children}
+            <FirebaseErrorListener />
+          </AppProvider>
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>

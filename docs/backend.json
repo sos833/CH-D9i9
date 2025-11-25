@@ -1,0 +1,156 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Represents a product in the inventory.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the product."
+        },
+        "barcode": {
+          "type": "string",
+          "description": "The barcode of the product."
+        },
+        "stock": {
+          "type": "number",
+          "description": "The current stock quantity of the product."
+        },
+        "costPrice": {
+          "type": "number",
+          "description": "The cost price of the product."
+        },
+        "sellingPrice": {
+          "type": "number",
+          "description": "The selling price of the product."
+        }
+      },
+      "required": ["name", "stock", "costPrice", "sellingPrice"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Represents a customer.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the customer."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the customer."
+        },
+        "totalDebt": {
+          "type": "number",
+          "description": "The total debt of the customer."
+        }
+      },
+      "required": ["name", "phone", "totalDebt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Represents a sale or debt payment.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time of the transaction."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": {
+                "type": "string"
+              },
+              "productName": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "number"
+              },
+              "price": {
+                "type": "number"
+              }
+            },
+            "required": ["productId", "productName", "quantity", "price"]
+          }
+        },
+        "total": {
+          "type": "number"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["cash", "credit"]
+        },
+        "customerId": {
+          "type": "string"
+        },
+        "customerName": {
+          "type": "string"
+        }
+      },
+      "required": ["date", "items", "total", "paymentMethod"]
+    },
+    "CashWithdrawal": {
+        "title": "Cash Withdrawal",
+        "description": "Represents a cash withdrawal from the cashbox.",
+        "type": "object",
+        "properties": {
+            "date": {
+                "type": "string",
+                "format": "date-time"
+            },
+            "amount": {
+                "type": "number"
+            }
+        },
+        "required": ["date", "amount"]
+    },
+    "StoreSettings": {
+        "title": "Store Settings",
+        "description": "Configuration for the store.",
+        "type": "object",
+        "properties": {
+            "storeName": {
+                "type": "string"
+            },
+            "initialCash": {
+                "type": "number"
+            },
+            "initialSetupDone": {
+                "type": "boolean"
+            }
+        },
+        "required": ["storeName", "initialCash", "initialSetupDone"]
+    }
+  },
+  "auth": {
+    "providers": []
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Stores product information."
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Stores customer information."
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Stores transaction records."
+    },
+    "/cashWithdrawals/{withdrawalId}": {
+        "schema": { "$ref": "#/entities/CashWithdrawal"},
+        "description": "Stores cash withdrawal records."
+    },
+    "/config/store": {
+        "schema": { "$ref": "#/entities/StoreSettings"},
+        "description": "Stores general store settings."
+    }
+  }
+}

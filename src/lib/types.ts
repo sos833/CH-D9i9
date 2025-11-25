@@ -10,14 +10,14 @@ export type Product = {
 
 export type Customer = {
   id: string;
-  name: string;
+  name:string;
   phone: string;
   totalDebt: number;
 };
 
 export type Transaction = {
   id: string;
-  date: string; // Using ISO string for localStorage compatibility
+  date: string; // Using ISO string for Firestore compatibility
   items: {
     productId: string;
     productName: string;
