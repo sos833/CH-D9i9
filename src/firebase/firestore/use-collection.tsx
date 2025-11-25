@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, query, collection, where, Query, CollectionReference } from 'firebase/firestore';
 import type { DocumentData, QuerySnapshot } from 'firebase/firestore';
