@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader as SheetHeaderPrimitive, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader as SheetHeaderPrimitive } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/app-context';
 
