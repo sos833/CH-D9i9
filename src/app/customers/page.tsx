@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams, useRouter } from 'next/navigation';
-import type { Customer, Product, Transaction } from "@/lib/types";
+import type { Customer, Transaction } from "@/lib/types";
 import { useApp } from "@/context/app-context";
 import { z } from "zod";
 
@@ -39,7 +39,7 @@ type CartItemData = {
 }
 
 export default function CustomersPage() {
-  const { customers, setCustomers, transactions, setTransactions, setProducts } = useApp();
+  const { customers, setCustomers, transactions, setTransactions, setProducts, setCashWithdrawals, cashWithdrawals } = useApp();
   const [isClient, setIsClient] = React.useState(false);
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openPayment, setOpenPayment] = React.useState(false);
@@ -92,7 +92,6 @@ export default function CustomersPage() {
     
     setCustomers(prev => [...prev, newCustomer]);
     
-    // If this is a credit sale from POS, create the transaction
     if (cartFromPOS && debtAmount > 0) {
         const newTransaction: Transaction = {
             id: `TXN${Date.now()}`,
@@ -105,7 +104,6 @@ export default function CustomersPage() {
         };
         setTransactions(prev => [...prev, newTransaction]);
         
-        // Update product stock
         setProducts(prevProducts => {
             return prevProducts.map(p => {
                 const cartItem = cartFromPOS.find(ci => ci.productId === p.id);
@@ -124,7 +122,6 @@ export default function CustomersPage() {
     setOpenAdd(false);
     setNewCustomerName("");
     setNewCustomerPhone("");
-    // Clean up URL params
     router.replace('/customers');
   };
   
@@ -146,7 +143,6 @@ export default function CustomersPage() {
       return;
     }
 
-    // 1. Create a transaction for the debt payment
     const paymentTransaction: Transaction = {
       id: `TXN${Date.now()}`,
       date: new Date().toISOString(),
@@ -157,24 +153,25 @@ export default function CustomersPage() {
         price: amount,
       }],
       total: amount,
-      paymentMethod: 'cash', // Debt payment is a cash transaction
+      paymentMethod: 'cash',
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.name,
     };
     setTransactions(prev => [...prev, paymentTransaction]);
     
-    // 2. Update customer's debt
+    // This is a cash transaction, it should affect the cashbox
+    // But since it's a debt payment, it's income.
+    // The totalCashSales calculation already includes these transactions.
+    
     const newTotalDebt = selectedCustomer.totalDebt - amount;
 
     if (newTotalDebt <= 0) {
-        // If debt is paid off, remove the customer
         setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
         toast({
             title: "تم تسديد الدين",
-            description: `تم تسديد دين العميل ${selectedCustomer.name} بالكامل وإضافته إلى الصندوق.`,
+            description: `تم تسديد دين العميل ${selectedCustomer.name} بالكامل.`,
         });
     } else {
-        // Otherwise, just update the debt
         setCustomers(customers.map(c => 
             c.id === selectedCustomer.id 
                 ? { ...c, totalDebt: newTotalDebt } 
@@ -182,7 +179,7 @@ export default function CustomersPage() {
         ));
          toast({
           title: "تمت العملية",
-          description: `تمت إضافة دفعة بقيمة ${amount.toFixed(2)} د.ج للعميل ${selectedCustomer.name} وإضافتها إلى الصندوق.`,
+          description: `تمت إضافة دفعة بقيمة ${amount.toFixed(2)} د.ج للعميل ${selectedCustomer.name}.`,
         });
     }
     
@@ -221,13 +218,11 @@ export default function CustomersPage() {
             : c
      ));
      
-     // also update customerName in past credit transactions
      setTransactions(prev => prev.map(t =>
-        t.customerId === selectedCustomer.id && t.paymentMethod === 'credit'
+        t.customerId === selectedCustomer.id
             ? { ...t, customerName: editCustomerName }
             : t
      ));
-
 
      toast({
       title: "تم التحديث",
@@ -248,7 +243,6 @@ export default function CustomersPage() {
       <div className="flex items-center justify-between">
         <PageHeader title="العملاء" description="إدارة العملاء وتتبع ديونهم." />
         <div className="ml-auto flex items-center gap-2">
-          {/* Add Customer Dialog */}
           <Dialog open={openAdd} onOpenChange={(isOpen) => {
             setOpenAdd(isOpen);
             if (!isOpen) router.replace('/customers');
@@ -305,7 +299,7 @@ export default function CustomersPage() {
        {isClient ? (
         <DataTable
             columns={columns}
-            data={customers}
+            data={customers.filter(c => c.totalDebt > 0)}
             filterColumnId="name"
             filterPlaceholder="تصفية العملاء..."
         />
@@ -315,8 +309,7 @@ export default function CustomersPage() {
             </div>
         )}
 
-       {/* Add Payment Dialog */}
-      {selectedCustomer && (
+       {selectedCustomer && (
         <Dialog open={openPayment} onOpenChange={setOpenPayment}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -352,7 +345,6 @@ export default function CustomersPage() {
         </Dialog>
       )}
       
-       {/* Edit Customer Dialog */}
        {selectedCustomer && (
         <Dialog open={openEdit} onOpenChange={setOpenEdit}>
           <DialogContent>
@@ -385,7 +377,6 @@ export default function CustomersPage() {
         </Dialog>
        )}
        
-       {/* Customer Details Dialog */}
         {selectedCustomer && (
             <Dialog open={openDetails} onOpenChange={setOpenDetails}>
             <DialogContent>

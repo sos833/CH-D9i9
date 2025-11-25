@@ -136,7 +136,7 @@ export default function PosPage() {
 
   const total = cart.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
 
-  const processSale = (paymentMethod: 'cash' | 'credit', customerId?: string, customerName?: string) => {
+  const processSale = (paymentMethod: 'cash' | 'credit') => {
     if (cart.length === 0) {
       toast({
         variant: "destructive",
@@ -145,70 +145,57 @@ export default function PosPage() {
       });
       return;
     }
-    
-    // 1. Create transaction record
-    const newTransaction: Transaction = {
-      id: `TXN${Date.now()}`,
-      date: new Date().toISOString(),
-      items: cart.map(item => ({
-        productId: item.id,
-        productName: item.name,
-        quantity: item.quantity,
-        price: item.sellingPrice
-      })),
-      total: total,
-      paymentMethod: paymentMethod,
-      customerId: customerId,
-      customerName: customerName
-    };
-    setTransactions(prev => [...prev, newTransaction]);
-    
-    // 2. Update stock in global context
-    setProducts(prevProducts => {
-      return prevProducts.map(p => {
-        const cartItem = cart.find(ci => ci.id === p.id);
-        if (cartItem) {
-          return { ...p, stock: p.stock - cartItem.quantity };
-        }
-        return p;
-      });
-    });
 
-    // 3. Clear the cart
-    clearCart();
+    if (paymentMethod === 'cash') {
+        const newTransaction: Transaction = {
+          id: `TXN${Date.now()}`,
+          date: new Date().toISOString(),
+          items: cart.map(item => ({
+            productId: item.id,
+            productName: item.name,
+            quantity: item.quantity,
+            price: item.sellingPrice
+          })),
+          total: total,
+          paymentMethod: 'cash',
+        };
+        setTransactions(prev => [...prev, newTransaction]);
+        
+        setProducts(prevProducts => {
+          return prevProducts.map(p => {
+            const cartItem = cart.find(ci => ci.id === p.id);
+            if (cartItem) {
+              return { ...p, stock: p.stock - cartItem.quantity };
+            }
+            return p;
+          });
+        });
+
+        toast({
+          title: "تم الدفع",
+          description: `تم استلام مبلغ ${total.toFixed(2)} د.ج نقدًا.`,
+        });
+        clearCart();
+    } else if (paymentMethod === 'credit') {
+        const debtAmount = total;
+        const cartData = cart.map(item => ({
+            productId: item.id,
+            productName: item.name,
+            quantity: item.quantity,
+            price: item.sellingPrice
+          }));
+
+        router.push(`/customers?debt=${debtAmount}&cart=${encodeURIComponent(JSON.stringify(cartData))}`);
+        clearCart();
+    }
   };
 
   const handleCashPayment = () => {
     processSale('cash');
-    toast({
-      title: "تم الدفع",
-      description: `تم استلام مبلغ ${total.toFixed(2)} د.ج نقدًا.`,
-    });
   };
 
   const handleCreditPayment = () => {
-    if (cart.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "السلة فارغة. الرجاء إضافة منتجات أولاً.",
-      });
-      return;
-    }
-    const debtAmount = total;
-    
-    const cartData = cart.map(item => ({
-        productId: item.id,
-        productName: item.name,
-        quantity: item.quantity,
-        price: item.sellingPrice
-      }));
-
-    // Redirect without processing the sale here. The sale and stock update
-    // will be handled on the customers page after a new customer is created.
-    router.push(`/customers?debt=${debtAmount}&cart=${encodeURIComponent(JSON.stringify(cartData))}`);
-    clearCart();
-
+    processSale('credit');
   };
   
   const handleEditClick = (product: Product) => {
@@ -226,7 +213,6 @@ export default function PosPage() {
     const result = productSchema.safeParse({
         name: editProductDetails.name,
         sellingPrice: editProductDetails.sellingPrice,
-        // Keep old values for fields not being edited
         stock: selectedProduct.stock, 
         costPrice: selectedProduct.costPrice
     });
@@ -283,7 +269,7 @@ export default function PosPage() {
     const result = productSchema.safeParse({
         name: newProduct.name,
         stock: newProduct.stock,
-        costPrice: newProduct.costPrice || 0, // Default to 0 if empty
+        costPrice: newProduct.costPrice || 0,
         sellingPrice: newProduct.sellingPrice,
         barcode: newProduct.barcode,
     });
@@ -497,10 +483,10 @@ export default function PosPage() {
               </ScrollArea>
             </CardContent>
             <CardFooter className="flex flex-col items-stretch gap-2 p-4 border-t bg-muted/50">
-                <Button size="lg" className="w-full gap-2" onClick={handleCashPayment}>
+                <Button size="lg" className="w-full gap-2" onClick={handleCashPayment} disabled={cart.length === 0}>
                   <DollarSign className="h-4 w-4" /> دفع نقدي
                 </Button>
-                <Button variant="outline" size="lg" className="w-full gap-2" onClick={handleCreditPayment}>
+                <Button variant="outline" size="lg" className="w-full gap-2" onClick={handleCreditPayment} disabled={cart.length === 0}>
                    <CreditCard className="h-4 w-4" /> كريدي (دين)
                 </Button>
             </CardFooter>
@@ -508,7 +494,6 @@ export default function PosPage() {
         </div>
       </div>
       
-       {/* Edit Product Dialog */}
        {selectedProduct && (
        <Dialog open={openEdit} onOpenChange={setOpenEdit}>
         <DialogContent>
@@ -544,7 +529,6 @@ export default function PosPage() {
       </Dialog>
       )}
 
-      {/* Delete Product Confirmation Dialog */}
       {selectedProduct && (
         <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
           <AlertDialogContent>
@@ -566,3 +550,5 @@ export default function PosPage() {
     </AppLayout>
   );
 }
+
+    
