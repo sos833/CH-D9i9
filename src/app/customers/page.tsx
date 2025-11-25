@@ -25,6 +25,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import type { Customer, Transaction } from "@/lib/types";
 import { useApp } from "@/context/app-context";
 import { z } from "zod";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 const customerSchema = z.object({
   name: z.string().min(1, "الاسم مطلوب"),
@@ -234,6 +237,12 @@ export default function CustomersPage() {
     onViewDetails: handleViewDetailsClick
   });
 
+  const customerTransactions = selectedCustomer 
+    ? transactions
+        .filter(t => t.customerId === selectedCustomer.id)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    : [];
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between">
@@ -374,23 +383,59 @@ export default function CustomersPage() {
        )}
        
         {selectedCustomer && (
-            <Dialog open={openDetails} onOpenChange={setOpenDetails}>
-            <DialogContent>
+            <Dialog open={openDetails} onOpenChange={(isOpen) => {
+                setOpenDetails(isOpen);
+                if (!isOpen) setSelectedCustomer(null);
+            }}>
+            <DialogContent className="max-w-lg">
                 <DialogHeader>
-                <DialogTitle>تفاصيل العميل</DialogTitle>
+                    <DialogTitle>تفاصيل العميل: {selectedCustomer.name}</DialogTitle>
+                    <DialogDescription>
+                        <p><strong>الهاتف:</strong> {selectedCustomer.phone}</p>
+                        <p><strong>إجمالي الدين الحالي:</strong> <span className="font-bold text-destructive">{selectedCustomer.totalDebt.toFixed(2)} د.ج</span></p>
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <p><strong>الاسم:</strong> {selectedCustomer.name}</p>
-                    <p><strong>الهاتف:</strong> {selectedCustomer.phone}</p>
-                    <p><strong>إجمالي الدين:</strong> {selectedCustomer.totalDebt.toFixed(2)} د.ج</p>
-                    {/* We can add transaction history here later */}
-                </div>
+                 <ScrollArea className="h-72 mt-4">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>التاريخ</TableHead>
+                                <TableHead>النوع</TableHead>
+                                <TableHead className="text-left">المبلغ</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {customerTransactions.length > 0 ? (
+                            customerTransactions.map(t => (
+                                <TableRow key={t.id}>
+                                    <TableCell>{new Date(t.date).toLocaleDateString('ar-DZ')}</TableCell>
+                                    <TableCell>
+                                        {t.items.some(i => i.productId === 'DEBT_PAYMENT') ? (
+                                            <Badge variant="default">دفعة</Badge>
+                                        ) : (
+                                            <Badge variant="destructive">دين</Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className={`text-left font-medium ${t.items.some(i => i.productId === 'DEBT_PAYMENT') ? 'text-green-600' : 'text-destructive'}`}>
+                                        {t.items.some(i => i.productId === 'DEBT_PAYMENT') ? '+' : '-'}
+                                        {t.total.toFixed(2)} د.ج
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-center">لا توجد معاملات لعرضها.</TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
                 <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="secondary" onClick={() => setSelectedCustomer(null)}>
-                    إغلاق
-                    </Button>
-                </DialogClose>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">
+                        إغلاق
+                        </Button>
+                    </DialogClose>
                 </DialogFooter>
             </DialogContent>
             </Dialog>
@@ -399,5 +444,7 @@ export default function CustomersPage() {
     </AppLayout>
   );
 }
+
+    
 
     
