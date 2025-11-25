@@ -30,7 +30,7 @@ import {
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader as SheetHeaderPrimitive, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/app-context';
 
@@ -97,12 +97,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="sm:max-w-xs bg-sidebar text-sidebar-foreground p-0">
-                <SidebarHeader className="h-14">
+                 <SheetHeaderPrimitive className="flex flex-row items-center justify-between h-14 px-4 border-b border-sidebar-border">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
                       <Logo className="h-6 w-6 text-sidebar-primary" />
                       <span className="">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</span>
                     </Link>
-                  </SidebarHeader>
+                    <SheetTitle className="sr-only">Menu</SheetTitle>
+                 </SheetHeaderPrimitive>
                 <nav className="grid gap-6 text-lg font-medium p-6">
                 {navItems.map((item) => (
                     <Link
@@ -129,7 +130,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               />
             </div>
           </header>
-          <main className="flex flex-1 flex-col p-4 sm:px-6 sm:py-4">
+          <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0">
             {children}
           </main>
         </SidebarInset>
