@@ -1,5 +1,6 @@
 'use client';
-import { initializeFirebase, FirebaseProvider } from '@/firebase';
+import { initializeFirebase } from '@/firebase';
+import { FirebaseProvider } from './provider';
 import React, { ReactNode } from 'react';
 
 // Initialize Firebase on the client
