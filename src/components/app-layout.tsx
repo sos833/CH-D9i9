@@ -24,11 +24,10 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarInset,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader as SheetHeaderPrimitive, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader as SheetHeaderPrimitive, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/app-context';
 
@@ -85,7 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset>
+        <div className="flex flex-1 flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
             <Sheet>
               <SheetTrigger asChild>
@@ -100,7 +99,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       <Logo className="h-6 w-6 text-sidebar-primary" />
                       <span className="">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</span>
                     </Link>
-                    <SheetTitle className="sr-only">Menu</SheetTitle>
                  </SheetHeaderPrimitive>
                 <nav className="grid gap-6 text-lg font-medium p-6">
                 {navItems.map((item) => (
@@ -123,7 +121,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0">
             {children}
           </main>
-        </SidebarInset>
+        </div>
       </div>
     </SidebarProvider>
   );
