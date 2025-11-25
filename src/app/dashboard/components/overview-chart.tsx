@@ -46,7 +46,7 @@ export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' |
          const hourEnd = endOfHour(hour);
          const hourTransactions = transactions.filter(t => {
            const transactionDate = parseISO(t.date);
-           return isSameDay(transactionDate, now) && transactionDate >= hourStart && transactionDate <= hourEnd;
+           return isWithinInterval(transactionDate, { start: hourStart, end: hourEnd });
          });
          const profit = calculateProfit(hourTransactions, products);
          return {
@@ -88,7 +88,7 @@ export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' |
                 return isWithinInterval(transactionDate, { start: currentDay, end: intervalEnd });
             });
             const profit = calculateProfit(weekTransactions, products);
-            data.push({
+data.push({
                 name: `الأسبوع ${weekCount}`,
                 total: profit
             });
