@@ -13,7 +13,7 @@ import {
   Receipt,
   Wallet,
   LineChart,
-  Calculator, // Added for calculator
+  Calculator,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -33,8 +33,6 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/app-context';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SimpleCalculator } from '@/components/calculator';
 
 const navItems = [
   { href: '/dashboard', icon: <LayoutDashboard />, label: 'لوحة المعلومات' },
@@ -44,6 +42,7 @@ const navItems = [
   { href: '/customers', icon: <Users />, label: 'العملاء' },
   { href: '/cashbox', icon: <Wallet />, label: 'الصندوق' },
   { href: '/analytics', icon: <LineChart />, label: 'التحاليل' },
+  { href: '/calculator', icon: <Calculator />, label: 'آلة حاسبة' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -129,17 +128,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
               />
             </div>
-             <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="icon" className="ml-2">
-                  <Calculator className="h-5 w-5" />
-                  <span className="sr-only">آلة حاسبة</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
-                <SimpleCalculator />
-              </PopoverContent>
-            </Popover>
           </header>
           <main className="flex flex-1 flex-col p-4 sm:px-6 sm:py-4">
             {children}
