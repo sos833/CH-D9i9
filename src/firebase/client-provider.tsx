@@ -1,5 +1,5 @@
 'use client';
-import { initializeFirebase } from '@/firebase';
+import { initializeFirebase } from '@/firebase/index';
 import { FirebaseProvider } from './provider';
 import React, { ReactNode } from 'react';
 
