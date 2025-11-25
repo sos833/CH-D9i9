@@ -12,6 +12,7 @@ import {
   Search,
   Receipt,
   Wallet,
+  LineChart, // Added for analytics
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -39,11 +40,18 @@ const navItems = [
   { href: '/inventory', icon: <Package />, label: 'المخزون' },
   { href: '/customers', icon: <Users />, label: 'العملاء' },
   { href: '/cashbox', icon: <Wallet />, label: 'الصندوق' },
+  { href: '/analytics', icon: <LineChart />, label: 'التحاليل' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { storeSettings } = useApp();
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    setIsLoading(false);
+  }, []);
+
 
   return (
     <SidebarProvider>
@@ -56,7 +64,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarHeader className="h-14">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <Logo className="h-6 w-6 text-sidebar-primary" />
-              <span className="">{storeSettings.storeName || 'دفتر دي زاد'}</span>
+              <span className="">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</span>
             </Link>
           </SidebarHeader>
           <SidebarContent>
@@ -91,7 +99,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <SidebarHeader className="h-14">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
                       <Logo className="h-6 w-6 text-sidebar-primary" />
-                      <span className="">{storeSettings.storeName || 'دفتر دي زاد'}</span>
+                      <span className="">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</span>
                     </Link>
                   </SidebarHeader>
                 <nav className="grid gap-6 text-lg font-medium p-6">
