@@ -10,6 +10,7 @@ export const SimpleCalculator = () => {
   const [operator, setOperator] = useState<string | null>(null);
   const [previousValue, setPreviousValue] = useState<number | null>(null);
   const [clearDisplay, setClearDisplay] = useState(false);
+  const [historyValue, setHistoryValue] = useState('');
 
   const handleDigitClick = (digit: string) => {
     if (displayValue === '0' || clearDisplay) {
@@ -27,8 +28,10 @@ export const SimpleCalculator = () => {
       const result = calculate();
       setDisplayValue(String(result));
       setPreviousValue(result);
+      setHistoryValue(`${result} ${nextOperator}`);
     } else {
       setPreviousValue(inputValue);
+      setHistoryValue(`${inputValue} ${nextOperator}`);
     }
     
     setOperator(nextOperator);
@@ -55,11 +58,13 @@ export const SimpleCalculator = () => {
 
   const handleEqualsClick = () => {
     if (operator && previousValue !== null) {
+      const inputValue = parseFloat(displayValue);
       const result = calculate();
+      setHistoryValue(`${previousValue} ${operator} ${inputValue} =`);
       setDisplayValue(String(result));
-      setPreviousValue(result);
+      setPreviousValue(null);
       setOperator(null);
-      setClearDisplay(true); // Let user start a new calculation
+      setClearDisplay(true);
     }
   };
 
@@ -67,14 +72,21 @@ export const SimpleCalculator = () => {
     setDisplayValue('0');
     setOperator(null);
     setPreviousValue(null);
+    setHistoryValue('');
     setClearDisplay(false);
   };
   
   const handleBackspace = () => {
+    if (clearDisplay) return;
     setDisplayValue(displayValue.slice(0, -1) || '0');
   }
 
   const handleDotClick = () => {
+    if (clearDisplay) {
+      setDisplayValue('0.');
+      setClearDisplay(false);
+      return;
+    }
     if (!displayValue.includes('.')) {
       setDisplayValue(displayValue + '.');
     }
@@ -83,20 +95,25 @@ export const SimpleCalculator = () => {
   const handleSpecialZeroClick = (zeros: string) => {
     if (displayValue !== '0' && !clearDisplay) {
       setDisplayValue(displayValue + zeros);
-    } else if (clearDisplay) {
+    } else if (clearDisplay || displayValue === '0') {
        setDisplayValue(zeros);
        setClearDisplay(false);
     }
   };
+  
+  const operatorSymbols: {[key: string]: string} = {
+    '+': '+',
+    '-': '−',
+    '*': '×',
+    '/': '÷'
+  }
 
   return (
     <div className="bg-card p-4 rounded-lg shadow-lg" dir="ltr">
-      <Input
-        type="text"
-        readOnly
-        value={displayValue}
-        className="w-full h-20 text-5xl text-right font-mono bg-background text-foreground border-0 focus-visible:ring-0 focus-visible:ring-offset-0 mb-4"
-      />
+      <div className="w-full h-20 text-right font-mono bg-background text-foreground mb-4 pr-2 flex flex-col justify-end">
+          <div className="text-xl text-muted-foreground h-8">{historyValue}</div>
+          <div className="text-5xl">{displayValue}</div>
+      </div>
       <div className="grid grid-cols-4 gap-2 text-lg">
         <Button variant="secondary" className="col-span-2 text-xl" onClick={handleClear}>C</Button>
         <Button variant="secondary" className="text-xl" onClick={handleBackspace}>DEL</Button>
