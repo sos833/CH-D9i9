@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { Product, Customer, Transaction, StoreSettings, DailySummary, CashWithdrawal } from '@/lib/types';
+import type { Product, Customer, Transaction, StoreSettings, CashWithdrawal } from '@/lib/types';
 
 interface AppContextType {
   products: Product[];
@@ -13,8 +13,6 @@ interface AppContextType {
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   storeSettings: StoreSettings;
   setStoreSettings: React.Dispatch<React.SetStateAction<StoreSettings>>;
-  dailySummaries: DailySummary[];
-  setDailySummaries: React.Dispatch<React.SetStateAction<DailySummary[]>>;
   cashWithdrawals: CashWithdrawal[];
   setCashWithdrawals: React.Dispatch<React.SetStateAction<CashWithdrawal[]>>;
 }
@@ -43,7 +41,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [products, setProducts] = useState<Product[]>(() => getInitialState('products', []));
   const [customers, setCustomers] = useState<Customer[]>(() => getInitialState('customers', []));
   const [transactions, setTransactions] = useState<Transaction[]>(() => getInitialState('transactions', []));
-  const [dailySummaries, setDailySummaries] = useState<DailySummary[]>(() => getInitialState('dailySummaries', []));
   const [cashWithdrawals, setCashWithdrawals] = useState<CashWithdrawal[]>(() => getInitialState('cashWithdrawals', []));
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => getInitialState('storeSettings', {
     storeName: '',
@@ -64,10 +61,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [transactions]);
   
   useEffect(() => {
-    localStorage.setItem('dailySummaries', JSON.stringify(dailySummaries));
-  }, [dailySummaries]);
-
-  useEffect(() => {
     localStorage.setItem('storeSettings', JSON.stringify(storeSettings));
   }, [storeSettings]);
   
@@ -81,7 +74,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       customers, setCustomers,
       transactions, setTransactions,
       storeSettings, setStoreSettings,
-      dailySummaries, setDailySummaries,
       cashWithdrawals, setCashWithdrawals,
     }}>
       {children}

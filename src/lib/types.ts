@@ -36,14 +36,6 @@ export type StoreSettings = {
   initialSetupDone: boolean;
 };
 
-export type DailySummary = {
-  id: string; // e.g., '2024-07-26'
-  date: string;
-  income: number;
-  expenses: number;
-  profit: number;
-};
-
 export type CashWithdrawal = {
   id: string;
   date: string;
