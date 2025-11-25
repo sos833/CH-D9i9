@@ -3,56 +3,87 @@
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
-import { subDays, format, startOfWeek, startOfMonth, eachDayOfInterval, getDay, eachHourOfInterval, startOfHour, endOfDay, subHours, parseISO } from "date-fns"
+import { subDays, format, startOfWeek, startOfMonth, eachDayOfInterval, parseISO, endOfDay, isWithinInterval, addDays } from "date-fns"
 import { ar } from "date-fns/locale"
 import { useApp } from "@/context/app-context"
+import { useMemo } from "react"
+import type { Transaction, Product } from "@/lib/types"
+
+const calculateProfit = (transactions: Transaction[], products: Product[]) => {
+  let totalProfit = 0;
+  const productMap = new Map(products.map(p => [p.id, p]));
+
+  transactions.forEach(transaction => {
+    // Exclude debt payments from profit calculation
+    if (transaction.items.some(item => item.productId === 'DEBT_PAYMENT')) {
+      return;
+    }
+    transaction.items.forEach(item => {
+      const product = productMap.get(item.productId);
+      const costPrice = product ? product.costPrice : 0;
+      const profitPerItem = item.price - costPrice;
+      totalProfit += profitPerItem * item.quantity;
+    });
+  });
+
+  return totalProfit;
+};
+
 
 export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' | 'month' }) {
-  const { dailySummaries } = useApp();
+  const { transactions, products } = useApp();
 
-  const generateChartData = () => {
+  const chartData = useMemo(() => {
     const now = new Date();
     
     if (viewMode === 'day') {
-       const todaySummary = dailySummaries.find(s => format(parseISO(s.date), 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd'));
-       // For day view, maybe we can show something else or just a single bar
-       // For now, let's return a single point or an empty array if no summary for today
-       return todaySummary ? [{ name: 'اليوم', total: todaySummary.profit }] : [];
+       const todayTransactions = transactions.filter(t => format(parseISO(t.date), 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd'));
+       const profit = calculateProfit(todayTransactions, products);
+       return [{ name: 'اليوم', total: profit }];
     }
 
     if (viewMode === 'week') {
       const weekStart = startOfWeek(now, { locale: ar });
       const days = eachDayOfInterval({ start: weekStart, end: now });
+
       return days.map(day => {
-        const daySummary = dailySummaries.find(s => format(parseISO(s.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
+        const dayTransactions = transactions.filter(t => format(parseISO(t.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
+        const profit = calculateProfit(dayTransactions, products);
         return { 
-          name: format(day, 'EEEE', { locale: ar }), 
-          total: daySummary ? daySummary.profit : 0 
+          name: format(day, 'EEE', { locale: ar }), 
+          total: profit 
         };
       });
     }
 
     if (viewMode === 'month') {
         const monthStart = startOfMonth(now);
-        const days = eachDayOfInterval({ start: monthStart, end: now });
-        return days.map(day => {
-            const daySummary = dailySummaries.find(s => format(parseISO(s.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
-            return { 
-                name: format(day, 'd MMM'), 
-                total: daySummary ? daySummary.profit : 0 
-            };
-        });
+        // We will group by week
+        let currentDay = monthStart;
+        const data = [];
+        while(currentDay <= now) {
+            const weekEnd = endOfDay(addDays(currentDay, 6));
+            const weekTransactions = transactions.filter(t => {
+                const transactionDate = parseISO(t.date);
+                return isWithinInterval(transactionDate, { start: currentDay, end: weekEnd });
+            });
+            const profit = calculateProfit(weekTransactions, products);
+            data.push({
+                name: `أسبوع ${format(currentDay, 'd')}`,
+                total: profit
+            });
+            currentDay = addDays(weekEnd, 1);
+        }
+        return data;
     }
     
     return [];
-  };
-
-  const data = generateChartData();
+  }, [viewMode, transactions, products]);
 
   return (
     <ChartContainer config={{}} className="min-h-[250px] w-full">
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={data}>
+        <BarChart data={chartData}>
            <CartesianGrid vertical={false} />
           <XAxis
             dataKey="name"
@@ -70,9 +101,9 @@ export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' |
           />
           <Tooltip 
             cursor={{ fill: 'hsl(var(--muted))' }}
-            content={<ChartTooltipContent formatter={(value) => `${value} د.ج`} />}
+            content={<ChartTooltipContent formatter={(value) => `${(value as number).toFixed(2)} د.ج`} nameKey="name" labelKey="total" />}
           />
-          <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="total" name="الربح" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </ChartContainer>
