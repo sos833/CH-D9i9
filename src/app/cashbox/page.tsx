@@ -144,7 +144,7 @@ export default function CashboxPage() {
           </Dialog>
       </div>
      
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3 mt-4">
+      <div className="grid gap-4 md:grid-cols-3 grid-cols-1 mt-4">
         <StatCard 
             title="الرصيد الحالي في الصندوق" 
             value={`د.ج ${currentCashInBox.toFixed(2)}`}
@@ -178,3 +178,5 @@ export default function CashboxPage() {
     </AppLayout>
   );
 }
+
+    

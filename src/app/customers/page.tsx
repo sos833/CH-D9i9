@@ -153,19 +153,15 @@ export default function CustomersPage() {
         price: amount,
       }],
       total: amount,
-      paymentMethod: 'cash',
+      paymentMethod: 'cash', // Debt payment is always cash
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.name,
     };
     setTransactions(prev => [...prev, paymentTransaction]);
-    
-    // This is a cash transaction, it should affect the cashbox
-    // But since it's a debt payment, it's income.
-    // The totalCashSales calculation already includes these transactions.
-    
+        
     const newTotalDebt = selectedCustomer.totalDebt - amount;
 
-    if (newTotalDebt <= 0) {
+    if (newTotalDebt <= 0.001) { // Use a small threshold for floating point comparison
         setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
         toast({
             title: "تم تسديد الدين",

@@ -52,7 +52,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <PageHeader title="لوحة المعلومات" description="نظرة عامة على أداء متجرك." />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
           <StatCard 
             title="إيرادات اليوم (النقدية)" 
             value={`د.ج ${todayRevenue.toFixed(2)}`}
@@ -123,3 +123,5 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+    

@@ -57,7 +57,7 @@ const productSchema = z.object({
 type CartItem = Product & { quantity: number };
 
 export default function PosPage() {
-  const { products, setProducts, setTransactions } = useApp();
+  const { products, setProducts, setTransactions, customers, setCustomers } = useApp();
   const [isClient, setIsClient] = React.useState(false);
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const { toast } = useToast();
@@ -309,7 +309,7 @@ export default function PosPage() {
 
   return (
     <AppLayout>
-      <div className="grid flex-1 items-start gap-4 md:gap-8 lg:grid-cols-3 xl:grid-cols-3">
+      <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-3 xl:grid-cols-3">
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
@@ -381,7 +381,7 @@ export default function PosPage() {
             </Dialog>
           </div>
            {isClient ? (
-              <ScrollArea className="h-[60vh]">
+              <ScrollArea className="h-[60vh] lg:h-[70vh]">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {filteredProducts.map((product) => (
                     <Card 
@@ -426,7 +426,7 @@ export default function PosPage() {
                 </div>
              )}
         </div>
-        <div>
+        <div className="lg:col-span-1">
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between bg-muted/50">
               <CardTitle className="group flex items-center gap-2 text-lg">
@@ -440,7 +440,7 @@ export default function PosPage() {
               )}
             </CardHeader>
             <CardContent className="p-6 text-sm">
-              <ScrollArea className="h-[40vh]">
+              <ScrollArea className="h-[40vh] lg:h-[45vh]">
                 <div className="grid gap-3">
                   {cart.length > 0 ? (
                     <ul className="grid gap-4">
