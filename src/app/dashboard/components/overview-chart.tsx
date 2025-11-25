@@ -3,7 +3,7 @@
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
-import { subDays, format, startOfWeek, startOfMonth, eachDayOfInterval, parseISO, endOfDay, isWithinInterval, addDays } from "date-fns"
+import { subDays, format, startOfWeek, startOfMonth, eachDayOfInterval, parseISO, endOfDay, isWithinInterval, addDays, endOfMonth } from "date-fns"
 import { ar } from "date-fns/locale"
 import { useApp } from "@/context/app-context"
 import { useMemo } from "react"
@@ -58,21 +58,28 @@ export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' |
 
     if (viewMode === 'month') {
         const monthStart = startOfMonth(now);
-        // We will group by week
+        const monthEnd = endOfMonth(now);
+        
         let currentDay = monthStart;
         const data = [];
-        while(currentDay <= now) {
+        let weekCount = 1;
+
+        while(currentDay <= monthEnd) {
             const weekEnd = endOfDay(addDays(currentDay, 6));
+            const intervalEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
+
             const weekTransactions = transactions.filter(t => {
                 const transactionDate = parseISO(t.date);
-                return isWithinInterval(transactionDate, { start: currentDay, end: weekEnd });
+                return isWithinInterval(transactionDate, { start: currentDay, end: intervalEnd });
             });
             const profit = calculateProfit(weekTransactions, products);
             data.push({
-                name: `أسبوع ${format(currentDay, 'd')}`,
+                name: `الأسبوع ${weekCount}`,
                 total: profit
             });
-            currentDay = addDays(weekEnd, 1);
+
+            currentDay = addDays(intervalEnd, 1);
+            weekCount++;
         }
         return data;
     }
