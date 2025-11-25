@@ -3,7 +3,7 @@
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
-import { subDays, format, startOfWeek, startOfMonth, eachDayOfInterval, parseISO, endOfDay, isWithinInterval, addDays, endOfMonth } from "date-fns"
+import { subDays, format, startOfWeek, startOfMonth, eachDayOfInterval, parseISO, endOfDay, isWithinInterval, addDays, endOfMonth, startOfDay, endOfHour, startOfHour, eachHourOfInterval, isSameDay } from "date-fns"
 import { ar } from "date-fns/locale"
 import { useApp } from "@/context/app-context"
 import { useMemo } from "react"
@@ -37,14 +37,29 @@ export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' |
     const now = new Date();
     
     if (viewMode === 'day') {
-       const todayTransactions = transactions.filter(t => format(parseISO(t.date), 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd'));
-       const profit = calculateProfit(todayTransactions, products);
-       return [{ name: 'اليوم', total: profit }];
+       const todayStart = startOfDay(now);
+       const todayEnd = endOfDay(now);
+       const hours = eachHourOfInterval({ start: todayStart, end: todayEnd });
+
+       return hours.map(hour => {
+         const hourStart = startOfHour(hour);
+         const hourEnd = endOfHour(hour);
+         const hourTransactions = transactions.filter(t => {
+           const transactionDate = parseISO(t.date);
+           return isSameDay(transactionDate, now) && transactionDate >= hourStart && transactionDate <= hourEnd;
+         });
+         const profit = calculateProfit(hourTransactions, products);
+         return {
+           name: format(hour, 'HH:00'),
+           total: profit
+         };
+       });
     }
 
     if (viewMode === 'week') {
       const weekStart = startOfWeek(now, { locale: ar });
-      const days = eachDayOfInterval({ start: weekStart, end: now });
+      const weekEnd = addDays(weekStart, 6);
+      const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
       return days.map(day => {
         const dayTransactions = transactions.filter(t => format(parseISO(t.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'));
@@ -64,7 +79,7 @@ export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' |
         const data = [];
         let weekCount = 1;
 
-        while(currentDay <= monthEnd) {
+        while(currentDay <= monthEnd && weekCount <= 4) {
             const weekEnd = endOfDay(addDays(currentDay, 6));
             const intervalEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
 
@@ -98,6 +113,7 @@ export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' |
             fontSize={12}
             tickLine={false}
             axisLine={false}
+            interval={viewMode === 'day' ? 2 : 0}
           />
           <YAxis
             stroke="#888888"
@@ -108,7 +124,7 @@ export default function OverviewChart({ viewMode }: { viewMode: 'day' | 'week' |
           />
           <Tooltip 
             cursor={{ fill: 'hsl(var(--muted))' }}
-            content={<ChartTooltipContent formatter={(value) => `${(value as number).toFixed(2)} د.ج`} nameKey="name" labelKey="total" />}
+            content={<ChartTooltipContent formatter={(value, name) => [`${(value as number).toFixed(2)} د.ج`, `الربح في ${name}`]} />}
           />
           <Bar dataKey="total" name="الربح" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
         </BarChart>

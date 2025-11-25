@@ -1,3 +1,4 @@
+
 "use client";
 
 import AppLayout from "@/components/app-layout";
@@ -34,10 +35,21 @@ export default function AnalyticsPage() {
                 <Tabs defaultValue="month" className="space-y-4">
                     <div className="flex items-center">
                         <TabsList>
+                            <TabsTrigger value="day">اليوم</TabsTrigger>
                             <TabsTrigger value="week">الأسبوع</TabsTrigger>
                             <TabsTrigger value="month">الشهر</TabsTrigger>
                         </TabsList>
                     </div>
+                    <TabsContent value="day" className="space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>نظرة عامة على أرباح اليوم</CardTitle>
+                            </CardHeader>
+                            <CardContent className="pl-2">
+                                <OverviewChart viewMode="day" />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
                     <TabsContent value="week" className="space-y-4">
                         <Card>
                             <CardHeader>
