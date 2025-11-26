@@ -96,7 +96,7 @@ export default function CashboxPage() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
          <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />
          <Dialog open={openWithdrawal} onOpenChange={setOpenWithdrawal}>
             <DialogTrigger asChild>
@@ -138,7 +138,7 @@ export default function CashboxPage() {
           </Dialog>
       </div>
      
-      <div className="grid gap-4 md:grid-cols-3 grid-cols-1 mt-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3 mt-4">
         <StatCard 
             title="الرصيد الحالي في الصندوق" 
             value={`د.ج ${currentCashInBox.toFixed(2)}`}
@@ -172,5 +172,3 @@ export default function CashboxPage() {
     </AppLayout>
   );
 }
-
-    
