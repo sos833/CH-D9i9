@@ -1,4 +1,3 @@
-
 "use client";
 
 import AppLayout from "@/components/app-layout";
@@ -11,10 +10,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogClose,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"; // تمت إزالة DialogTrigger لأنه غير ضروري هنا
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +20,7 @@ import { useApp } from "@/context/app-context";
 import React from "react";
 import { z } from "zod";
 import type { CashWithdrawal } from "@/lib/types";
-import { Banknote } from "lucide-react";
+import { Banknote, Plus } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { columns as withdrawalColumns } from "./components/columns";
 
@@ -61,8 +59,8 @@ export default function CashboxPage() {
     if (amountToWithdraw > currentCashInBox) {
        toast({
         variant: "destructive",
-        title: "خطأ",
-        description: "المبلغ المطلوب سحبه أكبر من المبلغ الموجود في الصندوق.",
+        title: "رصيد غير كافٍ",
+        description: "لا يمكنك سحب مبلغ أكبر من الموجود في الصندوق.",
       });
       return;
     }
@@ -88,7 +86,7 @@ export default function CashboxPage() {
       <AppLayout>
         <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />
         <div className="h-96 w-full rounded-lg border flex items-center justify-center mt-4">
-          <p>جار التحميل...</p>
+          <p className="text-muted-foreground">جار التحميل...</p>
         </div>
       </AppLayout>
     )
@@ -96,72 +94,76 @@ export default function CashboxPage() {
 
   return (
     <AppLayout>
+      <div className="flex items-center justify-between gap-4">
+        <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />
+        
+        {/* التصحيح هنا: استخدام الزر مباشرة للتحكم في الـ State */}
+        <Button onClick={() => setOpenWithdrawal(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          سحب أموال
+        </Button>
+      </div>
+     
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3 mt-6">
+        <StatCard 
+            title="الرصيد الحالي (الكاش)" 
+            value={`${currentCashInBox.toFixed(2)} د.ج`}
+            icon={<Banknote className="h-4 w-4 text-muted-foreground" />} 
+            description={`يبدأ بـ ${initialCash.toFixed(2)} د.ج الأولي`}
+        />
+        <StatCard 
+            title="إجمالي المبيعات (كاش)" 
+            value={`${totalCashSales.toFixed(2)} د.ج`}
+            icon={<Banknote className="h-4 w-4 text-green-500" />} 
+            description={`منذ بداية الاستخدام`}
+        />
+        <StatCard 
+            title="إجمالي المسحوبات" 
+            value={`${totalWithdrawn.toFixed(2)} د.ج`}
+            icon={<Banknote className="h-4 w-4 text-red-500" />} 
+            description={`${(cashWithdrawals || []).length} عملية سحب`}
+        />
+      </div>
+
+      <div className="mt-8 space-y-4">
+        <h3 className="text-xl font-bold tracking-tight">سجل عمليات السحب</h3>
+        <div className="rounded-md border bg-card">
+            <DataTable
+                columns={withdrawalColumns}
+                data={(cashWithdrawals || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
+                filterColumnId="date"
+                filterPlaceholder="البحث بالتاريخ..."
+            />
+        </div>
+      </div>
+
+      {/* نافذة الحوار (Modal) */}
       <Dialog open={openWithdrawal} onOpenChange={setOpenWithdrawal}>
-        <div className="flex items-center justify-between gap-4">
-          <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />
-          <DialogTrigger asChild>
-            <Button>
-              سحب أموال
-            </Button>
-          </DialogTrigger>
-        </div>
-       
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-3 mt-4">
-          <StatCard 
-              title="الرصيد الحالي في الصندوق" 
-              value={`د.ج ${currentCashInBox.toFixed(2)}`}
-              icon={<Banknote />} 
-              description={`يبدأ بـ ${initialCash.toFixed(2)} د.ج الأولي`}
-          />
-          <StatCard 
-              title="إجمالي المبيعات النقدية" 
-              value={`د.ج ${totalCashSales.toFixed(2)}`}
-              icon={<Banknote />} 
-              description={`منذ بداية الاستخدام`}
-          />
-          <StatCard 
-              title="إجمالي المبالغ المسحوبة" 
-              value={`د.ج ${totalWithdrawn.toFixed(2)}`}
-              icon={<Banknote />} 
-              description={`${(cashWithdrawals || []).length} عملية سحب`}
-          />
-        </div>
-
-        <div className="mt-8">
-          <h3 className="text-xl font-bold tracking-tight mb-4">سجل عمليات السحب</h3>
-          <DataTable
-              columns={withdrawalColumns}
-              data={(cashWithdrawals || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
-              filterColumnId="date" // Filtering might not be ideal here, but need to provide a prop
-              filterPlaceholder="لا يوجد فلتر لهذه القائمة"
-          />
-        </div>
-
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[425px]" dir="rtl">
+          <DialogHeader className="text-right">
             <DialogTitle>سحب أموال من الصندوق</DialogTitle>
             <DialogDescription>
-              الرصيد الحالي: {currentCashInBox.toFixed(2)} د.ج
+              الرصيد المتوفر حالياً: <span className="font-bold text-foreground">{currentCashInBox.toFixed(2)} د.ج</span>
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="grid gap-2">
               <Label htmlFor="withdrawal-amount" className="text-right">
-                المبلغ
+                المبلغ المراد سحبه (د.ج)
               </Label>
               <Input
                 id="withdrawal-amount"
                 type="number"
                 placeholder="0.00"
-                className="col-span-3"
+                className="text-left" // الأرقام تكتب من اليسار لليمين أفضل
                 value={withdrawalAmount}
                 onChange={(e) => setWithdrawalAmount(e.target.value)}
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <DialogClose asChild>
-              <Button type="button" variant="secondary">
+              <Button type="button" variant="outline">
                 إلغاء
               </Button>
             </DialogClose>
