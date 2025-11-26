@@ -96,47 +96,47 @@ export default function CashboxPage() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between gap-4">
-        <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />
-        <DialogTrigger asChild>
-          <Button onClick={() => setOpenWithdrawal(true)}>
-            سحب أموال
-          </Button>
-        </DialogTrigger>
-      </div>
-     
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3 mt-4">
-        <StatCard 
-            title="الرصيد الحالي في الصندوق" 
-            value={`د.ج ${currentCashInBox.toFixed(2)}`}
-            icon={<Banknote />} 
-            description={`يبدأ بـ ${initialCash.toFixed(2)} د.ج الأولي`}
-        />
-        <StatCard 
-            title="إجمالي المبيعات النقدية" 
-            value={`د.ج ${totalCashSales.toFixed(2)}`}
-            icon={<Banknote />} 
-            description={`منذ بداية الاستخدام`}
-        />
-        <StatCard 
-            title="إجمالي المبالغ المسحوبة" 
-            value={`د.ج ${totalWithdrawn.toFixed(2)}`}
-            icon={<Banknote />} 
-            description={`${(cashWithdrawals || []).length} عملية سحب`}
-        />
-      </div>
-
-      <div className="mt-8">
-        <h3 className="text-xl font-bold tracking-tight mb-4">سجل عمليات السحب</h3>
-        <DataTable
-            columns={withdrawalColumns}
-            data={(cashWithdrawals || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
-            filterColumnId="date" // Filtering might not be ideal here, but need to provide a prop
-            filterPlaceholder="لا يوجد فلتر لهذه القائمة"
-        />
-      </div>
-
       <Dialog open={openWithdrawal} onOpenChange={setOpenWithdrawal}>
+        <div className="flex items-center justify-between gap-4">
+          <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />
+          <DialogTrigger asChild>
+            <Button>
+              سحب أموال
+            </Button>
+          </DialogTrigger>
+        </div>
+       
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3 mt-4">
+          <StatCard 
+              title="الرصيد الحالي في الصندوق" 
+              value={`د.ج ${currentCashInBox.toFixed(2)}`}
+              icon={<Banknote />} 
+              description={`يبدأ بـ ${initialCash.toFixed(2)} د.ج الأولي`}
+          />
+          <StatCard 
+              title="إجمالي المبيعات النقدية" 
+              value={`د.ج ${totalCashSales.toFixed(2)}`}
+              icon={<Banknote />} 
+              description={`منذ بداية الاستخدام`}
+          />
+          <StatCard 
+              title="إجمالي المبالغ المسحوبة" 
+              value={`د.ج ${totalWithdrawn.toFixed(2)}`}
+              icon={<Banknote />} 
+              description={`${(cashWithdrawals || []).length} عملية سحب`}
+          />
+        </div>
+
+        <div className="mt-8">
+          <h3 className="text-xl font-bold tracking-tight mb-4">سجل عمليات السحب</h3>
+          <DataTable
+              columns={withdrawalColumns}
+              data={(cashWithdrawals || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
+              filterColumnId="date" // Filtering might not be ideal here, but need to provide a prop
+              filterPlaceholder="لا يوجد فلتر لهذه القائمة"
+          />
+        </div>
+
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>سحب أموال من الصندوق</DialogTitle>
