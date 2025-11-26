@@ -58,13 +58,13 @@ export default function OnboardingPage() {
         {/* رأس البطاقة */}
         <div className="flex flex-col items-center justify-center space-y-3 border-b border-white/10 bg-white/5 p-8 text-center">
           <div className="rounded-full bg-emerald-500/20 p-3 ring-1 ring-emerald-500/50">
-            <Logo className="h-12 w-12 text-emerald-500" />
+            <Logo className="h-28 w-28 text-emerald-500" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-2xl font-bold tracking-tight text-white">
-              مرحبًا بك في دفتر دي زاد
+            <h3 className="text-2xl font-bold tracking-tight text-white animate-fade-in-up">
+              مرحبًا بك في دفتر الإخوة بوستة
             </h3>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-400 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
              لنقم بإعداد حسابك. أدخل تفاصيل متجرك للبدء.
             </p>
           </div>
@@ -107,7 +107,7 @@ export default function OnboardingPage() {
         
         {/* تذييل بسيط */}
         <div className="bg-emerald-950/30 p-4 text-center text-xs text-slate-500 border-t border-white/5">
-          منصة جزائرية 100% لتسيير المحلات التجارية
+          تصميم وبرمجة الإخوة بوستة
         </div>
       </form>
     </div>
