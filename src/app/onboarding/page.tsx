@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/app-context';
 import * as React from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { AnimatedBackground } from '@/components/ui/animated-background';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -54,8 +55,9 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40">
-      <Card className="w-full max-w-lg">
+    <div className="relative flex min-h-screen items-center justify-center bg-muted/40 overflow-hidden">
+      <AnimatedBackground />
+      <Card className="w-full max-w-lg z-10 bg-card/80 backdrop-blur-sm">
         <form onSubmit={handleSubmit}>
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center animate-fade-in-up">
@@ -75,6 +77,7 @@ export default function OnboardingPage() {
                 required
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
+                className="bg-background/70"
               />
             </div>
              <div className="grid gap-2">
@@ -85,6 +88,7 @@ export default function OnboardingPage() {
                 placeholder="0.00"
                 value={initialCash}
                 onChange={(e) => setInitialCash(e.target.value)}
+                className="bg-background/70"
               />
                <p className="text-xs text-muted-foreground">
                 أدخل المبلغ النقدي الموجود حاليًا في صندوقك. اتركه فارغًا إذا كان صفرًا.
@@ -101,5 +105,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-
-    
