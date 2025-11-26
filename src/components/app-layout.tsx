@@ -62,7 +62,7 @@ function ThemeToggle() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon">
           <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <Moon className="absolute h-[1_2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
@@ -132,7 +132,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <span className="sr-only">Toggle Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="sm:max-w-xs bg-sidebar text-sidebar-foreground p-0" closeButton={false}>
+              <SheetContent side="right" className="sm:max-w-xs bg-sidebar text-sidebar-foreground p-0">
                  <SheetHeaderPrimitive className="flex flex-row items-center justify-between h-14 px-4 border-b border-sidebar-border">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
                       <Logo className="h-6 w-6 text-sidebar-primary" />
