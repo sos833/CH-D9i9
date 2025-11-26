@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, ReactNode } from 'react';
@@ -50,44 +51,62 @@ const handleFirestoreError = (error: any, context: { path: string, operation: 'c
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const firestore = useFirestore();
 
-  const { data: products = [], loading: loadingProducts, setData: setProducts } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
-  const { data: customers = [], loading: loadingCustomers, setData: setCustomers } = useCollection<Customer>(firestore ? collection(firestore, 'customers') : null);
-  const { data: transactions = [], loading: loadingTransactions, setData: setTransactions } = useCollection<Transaction>(firestore ? collection(firestore, 'transactions') : null);
-  const { data: cashWithdrawals = [], loading: loadingWithdrawals, setData: setCashWithdrawals } = useCollection<CashWithdrawal>(firestore ? collection(firestore, 'cashWithdrawals') : null);
+  const { data: productsData, loading: loadingProducts, setData: setProducts } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
+  const { data: customersData, loading: loadingCustomers, setData: setCustomers } = useCollection<Customer>(firestore ? collection(firestore, 'customers') : null);
+  const { data: transactionsData, loading: loadingTransactions, setData: setTransactions } = useCollection<Transaction>(firestore ? collection(firestore, 'transactions') : null);
+  const { data: cashWithdrawalsData, loading: loadingWithdrawals, setData: setCashWithdrawals } = useCollection<CashWithdrawal>(firestore ? collection(firestore, 'cashWithdrawals') : null);
   const { data: storeSettings, loading: loadingSettings, setData: setStoreSettingsData } = useDoc<StoreSettings>(firestore ? doc(firestore, 'config/store') : null);
+  
+  // Create state for optimistic updates
+  const [products, setProductsState] = React.useState<Product[]>([]);
+  const [customers, setCustomersState] = React.useState<Customer[]>([]);
+  const [transactions, setTransactionsState] = React.useState<Transaction[]>([]);
+  const [cashWithdrawals, setCashWithdrawalsState] = React.useState<CashWithdrawal[]>([]);
+
+  React.useEffect(() => setProductsState(productsData), [productsData]);
+  React.useEffect(() => setCustomersState(customersData), [customersData]);
+  React.useEffect(() => setTransactionsState(transactionsData), [transactionsData]);
+  React.useEffect(() => setCashWithdrawalsState(cashWithdrawalsData), [cashWithdrawalsData]);
+
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
     if (!firestore) return;
+    const optimisticProduct = { id: `temp-${Date.now()}`, ...product };
+    setProductsState(prev => [...prev, optimisticProduct as Product]);
     try {
       const docRef = await addDoc(collection(firestore, 'products'), product);
-      setProducts(prev => [...prev, {id: docRef.id, ...product}]);
+      setProducts(prev => prev.map(p => p.id === optimisticProduct.id ? { ...p, id: docRef.id } : p));
     } catch (error) {
         handleFirestoreError(error, {
             path: 'products/{productId}',
             operation: 'create',
             requestResourceData: product
         });
+        setProductsState(prev => prev.filter(p => p.id !== optimisticProduct.id));
     }
   };
 
   const updateProduct = async (productId: string, data: Partial<Product>) => {
     if (!firestore) return;
+    const originalProducts = products;
+    setProductsState(prev => prev.map(p => p.id === productId ? {...p, ...data} : p));
     try {
       const productRef = doc(firestore, 'products', productId);
       await setDoc(productRef, data, { merge: true });
-      setProducts(prev => prev.map(p => p.id === productId ? {...p, ...data} : p));
     } catch (error) {
        handleFirestoreError(error, {
             path: `products/${productId}`,
             operation: 'update',
             requestResourceData: data
         });
+        setProductsState(originalProducts);
     }
   };
   
   const updateProductsStock = async (items: { productId: string; quantity: number }[]) => {
       if (!firestore) return;
       const batch = writeBatch(firestore);
+      const originalProducts = products;
       
       const stockUpdates = items.map(item => {
         const product = products.find(p => p.id === item.productId);
@@ -100,39 +119,45 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return null;
       }).filter(Boolean);
 
+      setProductsState(prev => prev.map(p => {
+        const update = stockUpdates.find(u => u!.productId === p.id);
+        return update ? { ...p, stock: update.newStock } : p;
+      }));
+
       try {
         await batch.commit();
-        setProducts(prev => prev.map(p => {
-          const update = stockUpdates.find(u => u!.productId === p.id);
-          return update ? { ...p, stock: update.newStock } : p;
-        }));
       } catch (error) {
          handleFirestoreError(error, {
             path: `products/{multiple_products}`,
             operation: 'update',
             requestResourceData: { items: stockUpdates }
         });
+        setProductsState(originalProducts);
       }
   };
 
   const deleteProduct = async (productId: string) => {
     if (!firestore) return;
+    const originalProducts = products;
+    setProductsState(prev => prev.filter(p => p.id !== productId));
     try {
       await deleteDoc(doc(firestore, 'products', productId));
-      setProducts(prev => prev.filter(p => p.id !== productId));
     } catch (error) {
         handleFirestoreError(error, {
             path: `products/${productId}`,
             operation: 'delete'
         });
+        setProductsState(originalProducts);
     }
   }
 
   const addCustomer = async (customer: Omit<Customer, 'id'>): Promise<DocumentReference | undefined> => {
     if (!firestore) return undefined;
+    const optimisticCustomer = { id: `temp-${Date.now()}`, ...customer };
+    setCustomersState(prev => [...prev, optimisticCustomer as Customer]);
      try {
       const docRef = await addDoc(collection(firestore, 'customers'), customer);
-      setCustomers(prev => [...prev, {id: docRef.id, ...customer}]);
+      setCustomers(prev => prev.map(c => c.id === optimisticCustomer.id ? { ...c, id: docRef.id } : c));
       return docRef;
     } catch (error) {
       handleFirestoreError(error, {
@@ -140,21 +165,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         operation: 'create',
         requestResourceData: customer
       });
+      setCustomersState(prev => prev.filter(c => c.id !== optimisticCustomer.id));
       return undefined;
     }
   };
   
   const updateCustomer = async (customerId: string, data: Partial<Customer>) => {
      if (!firestore) return;
+     const originalCustomers = customers;
+     setCustomersState(prev => prev.map(c => c.id === customerId ? {...c, ...data} : c));
      try {
        await setDoc(doc(firestore, 'customers', customerId), data, { merge: true });
-       setCustomers(prev => prev.map(c => c.id === customerId ? {...c, ...data} : c));
      } catch (error) {
        handleFirestoreError(error, {
             path: `customers/${customerId}`,
             operation: 'update',
             requestResourceData: data
         });
+        setCustomersState(originalCustomers);
      }
   };
 
@@ -162,67 +190,78 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (!firestore) return;
     const customerRef = doc(firestore, 'customers', customerId);
     const customer = customers.find(c => c.id === customerId);
+
     if (customer) {
         const newDebt = customer.totalDebt + amount;
+        const originalCustomers = customers;
+        setCustomersState(prev => prev.map(c => c.id === customerId ? {...c, totalDebt: newDebt} : c));
         try {
             await setDoc(customerRef, { totalDebt: newDebt }, { merge: true });
-            setCustomers(prev => prev.map(c => c.id === customerId ? {...c, totalDebt: newDebt} : c));
         } catch (error) {
             handleFirestoreError(error, {
                 path: `customers/${customerId}`,
                 operation: 'update',
                 requestResourceData: { totalDebt: newDebt }
             });
+            setCustomersState(originalCustomers);
         }
     }
   };
   
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
      if (!firestore) return;
+     const optimisticTransaction = { id: `temp-${Date.now()}`, ...transaction };
+     setTransactionsState(prev => [...prev, optimisticTransaction as Transaction]);
       try {
         const docRef = await addDoc(collection(firestore, 'transactions'), transaction);
-        setTransactions(prev => [...prev, {id: docRef.id, ...transaction}]);
+        setTransactions(prev => prev.map(t => t.id === optimisticTransaction.id ? { ...t, id: docRef.id } : t));
       } catch (error) {
         handleFirestoreError(error, {
             path: 'transactions/{transactionId}',
             operation: 'create',
             requestResourceData: transaction
         });
+        setTransactionsState(prev => prev.filter(t => t.id !== optimisticTransaction.id));
       }
   };
 
   const setStoreSettings = async (settings: StoreSettings) => {
     if (!firestore) return;
+    const originalSettings = storeSettings;
+    setStoreSettingsData(settings);
     try {
       await setDoc(doc(firestore, 'config', 'store'), settings);
-      setStoreSettingsData(settings);
     } catch (error) {
       handleFirestoreError(error, {
             path: 'config/store',
             operation: 'update', // setDoc can be create or update
             requestResourceData: settings
       });
+      if(originalSettings) setStoreSettingsData(originalSettings);
     }
   };
   
   const addCashWithdrawal = async (withdrawal: Omit<CashWithdrawal, 'id'>) => {
     if (!firestore) return;
+    const optimisticWithdrawal = { id: `temp-${Date.now()}`, ...withdrawal };
+    setCashWithdrawalsState(prev => [...prev, optimisticWithdrawal as CashWithdrawal]);
     try {
       const docRef = await addDoc(collection(firestore, 'cashWithdrawals'), withdrawal);
-      setCashWithdrawals(prev => [...prev, {id: docRef.id, ...withdrawal}]);
+      setCashWithdrawals(prev => prev.map(w => w.id === optimisticWithdrawal.id ? { ...w, id: docRef.id } : w));
     } catch (error) {
       handleFirestoreError(error, {
         path: 'cashWithdrawals/{withdrawalId}',
         operation: 'create',
         requestResourceData: withdrawal
       });
+      setCashWithdrawalsState(prev => prev.filter(w => w.id !== optimisticWithdrawal.id));
     }
   };
 
   const resetStore = async () => {
     if (!firestore) return;
 
-    const collectionsToDelete = ['products', 'customers', 'transactions', 'cashWithdrawals', 'suppliers', 'purchases'];
+    const collectionsToDelete = ['products', 'customers', 'transactions', 'cashWithdrawals'];
     
     try {
       const batch = writeBatch(firestore);
@@ -239,10 +278,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       await batch.commit();
 
-      setProducts([]);
-      setCustomers([]);
-      setTransactions([]);
-      setCashWithdrawals([]);
+      setProductsState([]);
+      setCustomersState([]);
+      setTransactionsState([]);
+      setCashWithdrawalsState([]);
       setStoreSettingsData({ initialSetupDone: false, storeName: '', initialCash: 0 });
 
     } catch (error: any) {
@@ -295,3 +334,6 @@ export const useApp = () => {
   }
   return context;
 };
+
+
+    
