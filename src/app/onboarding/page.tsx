@@ -58,15 +58,15 @@ export default function OnboardingPage() {
       <Card className="w-full max-w-lg">
         <form onSubmit={handleSubmit}>
           <CardHeader className="text-center">
-            <div className="mb-4 flex justify-center">
+            <div className="mb-4 flex justify-center animate-fade-in-up">
               <Logo className="h-32 w-32 text-primary" />
             </div>
-            <CardTitle className="text-2xl">مرحبًا بك في دفتر دي زاد</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl animate-fade-in-up" style={{ animationDelay: '0.2s' }}>مرحبًا بك في دفتر دي زاد</CardTitle>
+            <CardDescription className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
               لنقم بإعداد حسابك. أدخل تفاصيل متجرك للبدء.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
+          <CardContent className="grid gap-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             <div className="grid gap-2">
               <Label htmlFor="store-name">اسم المحل</Label>
               <Input
@@ -91,7 +91,7 @@ export default function OnboardingPage() {
               </p>
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
             <Button type="submit" className="w-full">
               بدء الاستخدام
             </Button>
