@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { Product } from "@/lib/types"
-import { Checkbox } from "@/components/ui/checkbox"
+import { CustomCheckbox } from "@/components/ui/custom-checkbox"
 
 type ColumnsProps = {
   onEdit: (product: Product) => void;
@@ -24,19 +24,25 @@ export const columns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Product>[
   {
     id: "select",
     header: ({ table }) => (
-      <Checkbox
+      <CustomCheckbox
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        onChange={(e) => {
+          const isChecked = (e.target as HTMLInputElement).checked;
+          table.toggleAllPageRowsSelected(!!isChecked)
+        }}
         aria-label="Select all"
       />
     ),
     cell: ({ row }) => (
-      <Checkbox
+      <CustomCheckbox
         checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onChange={(e) => {
+            const isChecked = (e.target as HTMLInputElement).checked;
+            row.toggleSelected(!!isChecked);
+        }}
         aria-label="Select row"
       />
     ),
