@@ -59,7 +59,7 @@ export default function OnboardingPage() {
         <form onSubmit={handleSubmit}>
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
-              <Logo className="h-10 w-10 text-primary" />
+              <Logo className="h-20 w-20 text-primary" />
             </div>
             <CardTitle className="text-2xl">مرحبًا بك في دفتر دي زاد</CardTitle>
             <CardDescription>
