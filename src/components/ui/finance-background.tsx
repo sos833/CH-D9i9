@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { LineChart, Line, BarChart, Bar, ResponsiveContainer } from "recharts";
 
 // بيانات وهمية للرسوم البيانية
-const chartData = Array.from({ length: 10 }, (_, i) => ({
+const generateChartData = () => Array.from({ length: 10 }, (_, i) => ({
   name: i,
   value: Math.floor(Math.random() * 100) + 50,
 }));
@@ -33,9 +33,14 @@ const FloatingNumber = ({ delay, x, duration }: { delay: number; x: string; dura
 // مكون للخلفية كاملة
 export const FinanceBackground = () => {
   const [isMounted, setIsMounted] = useState(false);
+  const [chartData, setChartData] = useState(generateChartData());
 
   useEffect(() => {
     setIsMounted(true);
+    const interval = setInterval(() => {
+      setChartData(generateChartData());
+    }, 2000); // تحديث البيانات كل ثانيتين
+    return () => clearInterval(interval);
   }, []);
 
   if (!isMounted) return null;
@@ -70,6 +75,7 @@ export const FinanceBackground = () => {
               stroke="#10b981" // لون الزمرد
               strokeWidth={4}
               dot={false}
+              isAnimationActive={false} // إيقاف الأنيميشن الداخلي لـ recharts للتحكم الكامل
             />
           </LineChart>
         </ResponsiveContainer>
@@ -84,7 +90,7 @@ export const FinanceBackground = () => {
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>
-            <Bar dataKey="value" fill="#fbbf24" radius={[4, 4, 0, 0]} /> {/* لون ذهبي */}
+            <Bar dataKey="value" fill="#fbbf24" radius={[4, 4, 0, 0]} isAnimationActive={false} /> {/* لون ذهبي */}
           </BarChart>
         </ResponsiveContainer>
       </motion.div>
