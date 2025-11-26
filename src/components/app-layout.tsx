@@ -16,6 +16,7 @@ import {
   Settings,
   Moon,
   Sun,
+  Truck
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useTheme } from "next-themes"
@@ -32,7 +33,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader as SheetHeaderPrimitive } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader as SheetHeaderPrimitive, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/app-context';
 import {
@@ -138,6 +139,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       <Logo className="h-6 w-6 text-sidebar-primary" />
                       <span className="">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</span>
                     </Link>
+                    <SheetTitle className="sr-only">قائمة التنقل</SheetTitle>
                  </SheetHeaderPrimitive>
                 <nav className="grid gap-6 text-lg font-medium p-6">
                 {navItems.map((item) => (
