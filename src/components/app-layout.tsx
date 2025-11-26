@@ -16,7 +16,6 @@ import {
   Settings,
   Moon,
   Sun,
-  Truck
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useTheme } from "next-themes"
@@ -133,13 +132,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <span className="sr-only">Toggle Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="sm:max-w-xs bg-sidebar text-sidebar-foreground p-0">
+              <SheetContent side="right" className="sm:max-w-xs bg-sidebar text-sidebar-foreground p-0" closeButton={false}>
                  <SheetHeaderPrimitive className="flex flex-row items-center justify-between h-14 px-4 border-b border-sidebar-border">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
                       <Logo className="h-6 w-6 text-sidebar-primary" />
                       <span className="">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</span>
                     </Link>
-                    <SheetTitle className="sr-only">قائمة التنقل</SheetTitle>
+                    <SheetTitle className="sr-only">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</SheetTitle>
                  </SheetHeaderPrimitive>
                 <nav className="grid gap-6 text-lg font-medium p-6">
                 {navItems.map((item) => (
