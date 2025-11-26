@@ -14,11 +14,10 @@ import {
   LineChart,
   Calculator,
   Settings,
-  Moon,
-  Sun,
+  Truck
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useTheme } from "next-themes"
+import { ThemeSwitch } from '@/components/ui/theme-switch';
 
 import {
   SidebarProvider,
@@ -35,12 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader as SheetHeaderPrimitive, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/app-context';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 
 const navItems = [
   { href: '/dashboard', icon: <LayoutDashboard />, label: 'لوحة المعلومات' },
@@ -54,32 +48,6 @@ const navItems = [
   { href: '/settings', icon: <Settings />, label: 'الإعدادات' },
 ];
 
-function ThemeToggle() {
-  const { setTheme, theme } = useTheme()
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1_2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          فاتح
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          داكن
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          النظام
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -132,13 +100,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <span className="sr-only">Toggle Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="sm:max-w-xs bg-sidebar text-sidebar-foreground p-0">
+              <SheetContent side="right" className="sm:max-w-xs bg-sidebar text-sidebar-foreground p-0" closeButton={false}>
                  <SheetHeaderPrimitive className="flex flex-row items-center justify-between h-14 px-4 border-b border-sidebar-border">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
                       <Logo className="h-6 w-6 text-sidebar-primary" />
                       <span className="">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</span>
                     </Link>
-                    <SheetTitle className="sr-only">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</SheetTitle>
+                     <SheetTitle className="sr-only">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</SheetTitle>
+                     <SheetPrimitive.Close className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-destructive data-[state=open]:text-destructive-foreground">
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                    </SheetPrimitive.Close>
                  </SheetHeaderPrimitive>
                 <nav className="grid gap-6 text-lg font-medium p-6">
                 {navItems.map((item) => (
@@ -158,7 +130,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
             <div className="ml-auto flex items-center gap-2">
-              <ThemeToggle />
+              <ThemeSwitch />
             </div>
           </header>
           <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0">
