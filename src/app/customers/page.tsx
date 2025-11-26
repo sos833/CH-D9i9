@@ -41,7 +41,7 @@ type CartItemData = {
     price: number;
 }
 
-export default function CustomersPage() {
+function CustomersPageContent() {
   const { customers, transactions, loading, addCustomer, updateCustomer, addTransaction, updateProductsStock, updateCustomerDebt } = useApp();
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openPayment, setOpenPayment] = React.useState(false);
@@ -419,5 +419,14 @@ export default function CustomersPage() {
     </AppLayout>
   );
 }
+
+export default function CustomersPage() {
+    return (
+        <React.Suspense fallback={<div className="h-96 w-full rounded-lg border flex items-center justify-center mt-4"><p>جار تحميل صفحة العملاء...</p></div>}>
+            <CustomersPageContent />
+        </React.Suspense>
+    );
+}
+    
 
     
