@@ -14,7 +14,8 @@ import {
   LineChart,
   Calculator,
   Settings,
-  Truck
+  Truck,
+  X
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { ThemeSwitch } from '@/components/ui/theme-switch';
@@ -31,7 +32,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader as SheetHeaderPrimitive, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader as SheetHeaderPrimitive, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/app-context';
 
@@ -107,10 +108,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       <span className="">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</span>
                     </Link>
                      <SheetTitle className="sr-only">{isLoading ? 'دفتر دي زاد' : storeSettings?.storeName || 'دفتر دي زاد'}</SheetTitle>
-                     <SheetPrimitive.Close className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-destructive data-[state=open]:text-destructive-foreground">
+                     <SheetClose className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-destructive data-[state=open]:text-destructive-foreground">
                         <X className="h-4 w-4" />
                         <span className="sr-only">Close</span>
-                    </SheetPrimitive.Close>
+                    </SheetClose>
                  </SheetHeaderPrimitive>
                 <nav className="grid gap-6 text-lg font-medium p-6">
                 {navItems.map((item) => (
