@@ -52,7 +52,6 @@ const productSchema = z.object({
 const newProductSchema = productSchema.extend({
     stock: z.coerce.number().min(0, "المخزون لا يمكن أن يكون سالبًا"),
     costPrice: z.coerce.number().min(0, "سعر التكلفة لا يمكن أن يكون سالبًا"),
-    barcode: z.string().optional(),
 });
 
 type CartItem = Product & { quantity: number };
@@ -70,7 +69,7 @@ export default function PosPage() {
   const [editProductDetails, setEditProductDetails] = React.useState<Partial<Product>>({});
   const [searchQuery, setSearchQuery] = React.useState("");
 
-  const [newProduct, setNewProduct] = React.useState({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
+  const [newProduct, setNewProduct] = React.useState({ name: '', stock: '', costPrice: '', sellingPrice: '' });
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -222,8 +221,7 @@ export default function PosPage() {
   };
 
   const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (product.barcode && product.barcode.includes(searchQuery))
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleDeleteClick = (product: Product) => {
@@ -249,7 +247,6 @@ export default function PosPage() {
         stock: newProduct.stock,
         costPrice: newProduct.costPrice || 0,
         sellingPrice: newProduct.sellingPrice,
-        barcode: newProduct.barcode,
     });
 
     if (!result.success) {
@@ -261,17 +258,14 @@ export default function PosPage() {
         return;
     }
     
-    await addProduct({
-      ...result.data,
-      barcode: result.data.barcode || '',
-    });
+    await addProduct(result.data);
 
     toast({
       title: "تم الحفظ",
       description: "تمت إضافة المنتج بنجاح.",
     });
     setOpenAdd(false);
-    setNewProduct({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
+    setNewProduct({ name: '', stock: '', costPrice: '', sellingPrice: '' });
   };
   
   const handleNewProductChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,7 +281,7 @@ export default function PosPage() {
             <div className="relative flex-1">
               <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="البحث عن منتج بالاسم أو الباركود..."
+                placeholder="البحث عن منتج بالاسم..."
                 className="w-full pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -315,12 +309,6 @@ export default function PosPage() {
                       الاسم
                     </Label>
                     <Input id="name" placeholder="اسم المنتج" className="col-span-3" value={newProduct.name} onChange={handleNewProductChange} />
-                  </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="barcode" className="text-right">
-                      الباركود
-                    </Label>
-                    <Input id="barcode" placeholder="الباركود (اختياري)" className="col-span-3" value={newProduct.barcode} onChange={handleNewProductChange} />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="stock" className="text-right">
@@ -522,5 +510,3 @@ export default function PosPage() {
     </AppLayout>
   );
 }
-
-    

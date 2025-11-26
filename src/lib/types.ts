@@ -2,7 +2,6 @@
 export type Product = {
   id: string;
   name: string;
-  barcode: string;
   stock: number;
   costPrice: number;
   sellingPrice: number;

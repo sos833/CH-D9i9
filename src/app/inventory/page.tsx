@@ -40,7 +40,6 @@ const productSchema = z.object({
     stock: z.coerce.number().min(0, "المخزون لا يمكن أن يكون سالبًا"),
     costPrice: z.coerce.number().min(0, "سعر التكلفة لا يمكن أن يكون سالبًا"),
     sellingPrice: z.coerce.number().min(0, "سعر البيع لا يمكن أن يكون سالبًا"),
-    barcode: z.string().optional(),
 });
 
 export default function InventoryPage() {
@@ -50,7 +49,7 @@ export default function InventoryPage() {
   const [openDelete, setOpenDelete] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
   
-  const [newProduct, setNewProduct] = React.useState({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
+  const [newProduct, setNewProduct] = React.useState({ name: '', stock: '', costPrice: '', sellingPrice: '' });
   const [editProductState, setEditProductState] = React.useState<Partial<Product>>({});
 
   const { toast } = useToast();
@@ -61,7 +60,6 @@ export default function InventoryPage() {
         stock: newProduct.stock,
         costPrice: newProduct.costPrice,
         sellingPrice: newProduct.sellingPrice,
-        barcode: newProduct.barcode,
     });
 
     if (!result.success) {
@@ -73,17 +71,14 @@ export default function InventoryPage() {
         return;
     }
     
-    await addProduct({
-        ...result.data,
-        barcode: result.data.barcode || '',
-    });
+    await addProduct(result.data);
 
     toast({
       title: "تم الحفظ",
       description: "تمت إضافة المنتج بنجاح.",
     });
     setOpenAdd(false);
-    setNewProduct({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
+    setNewProduct({ name: '', stock: '', costPrice: '', sellingPrice: '' });
   };
   
   const handleUpdate = async () => {
@@ -94,7 +89,6 @@ export default function InventoryPage() {
         stock: editProductState.stock,
         costPrice: editProductState.costPrice,
         sellingPrice: editProductState.sellingPrice,
-        barcode: editProductState.barcode,
     });
 
     if (!result.success) {
@@ -119,7 +113,6 @@ export default function InventoryPage() {
     setSelectedProduct(product);
     setEditProductState({
         name: product.name,
-        barcode: product.barcode,
         stock: product.stock,
         costPrice: product.costPrice,
         sellingPrice: product.sellingPrice,
@@ -184,12 +177,6 @@ export default function InventoryPage() {
                   </Label>
                   <Input id="name" placeholder="اسم المنتج" className="col-span-3" value={newProduct.name} onChange={handleNewProductChange} />
                 </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="barcode" className="text-right">
-                    الباركود
-                  </Label>
-                  <Input id="barcode" placeholder="الباركود (اختياري)" className="col-span-3" value={newProduct.barcode} onChange={handleNewProductChange} />
-                </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="stock" className="text-right">
                     المخزون
@@ -251,12 +238,6 @@ export default function InventoryPage() {
                   </Label>
                   <Input id="edit-name" value={editProductState.name || ''} onChange={handleEditProductChange} className="col-span-3" />
                 </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-barcode" className="text-right">
-                    الباركود
-                  </Label>
-                  <Input id="edit-barcode" value={editProductState.barcode || ''} onChange={handleEditProductChange} className="col-span-3" />
-                </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-stock" className="text-right">
                     المخزون
@@ -310,5 +291,3 @@ export default function InventoryPage() {
     </AppLayout>
   );
 }
-
-    

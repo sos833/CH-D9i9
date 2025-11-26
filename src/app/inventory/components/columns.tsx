@@ -87,10 +87,6 @@ export const columns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Product>[
       return <div className="font-medium">{formatted}</div>
     },
   },
-   {
-    accessorKey: "barcode",
-    header: "الباركود",
-  },
   {
     id: "actions",
     cell: ({ row }) => {

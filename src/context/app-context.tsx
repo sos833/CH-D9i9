@@ -63,7 +63,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactionsState] = React.useState<Transaction[]>([]);
   const [cashWithdrawals, setCashWithdrawalsState] = React.useState<CashWithdrawal[]>([]);
 
-  React.useEffect(() => setProductsState(productsData), [productsData]);
+  React.useEffect(() => {
+    if (productsData) {
+      const sortedProducts = [...productsData].sort((a, b) => a.name.localeCompare(b.name));
+      setProductsState(sortedProducts);
+    }
+  }, [productsData]);
   React.useEffect(() => setCustomersState(customersData), [customersData]);
   React.useEffect(() => setTransactionsState(transactionsData), [transactionsData]);
   React.useEffect(() => setCashWithdrawalsState(cashWithdrawalsData), [cashWithdrawalsData]);
@@ -72,7 +77,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const addProduct = async (product: Omit<Product, 'id'>) => {
     if (!firestore) return;
     const optimisticProduct = { id: `temp-${Date.now()}`, ...product };
-    setProductsState(prev => [...prev, optimisticProduct as Product]);
+    setProductsState(prev => [...prev, optimisticProduct as Product].sort((a,b) => a.name.localeCompare(b.name)));
     try {
       const docRef = await addDoc(collection(firestore, 'products'), product);
       setProducts(prev => prev.map(p => p.id === optimisticProduct.id ? { ...p, id: docRef.id } : p));
@@ -334,6 +339,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-
-    
