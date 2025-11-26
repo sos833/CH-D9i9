@@ -1,10 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Deny all reads and writes by default.
-    // We will add more specific rules after implementing authentication.
+    // السماح بالقراءة والكتابة لجميع المستندات مؤقتًا للتطوير
+    // سيتم تأمين هذه القواعد لاحقًا
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }
