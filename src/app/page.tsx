@@ -2,23 +2,20 @@
 'use client';
 import { useApp } from '@/context/app-context';
 import { redirect } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 export default function Home() {
-  const { storeSettings } = useApp();
-  const [loading, setLoading] = useState(true);
+  const { storeSettings, loadingSettings } = useApp();
 
   useEffect(() => {
-    setLoading(false);
-  }, []);
+    if (!loadingSettings) {
+      if (storeSettings?.initialSetupDone) {
+        redirect('/dashboard');
+      } else {
+        redirect('/onboarding');
+      }
+    }
+  }, [storeSettings, loadingSettings]);
 
-  if (loading) {
-    return <div>جار التحميل...</div>; // Or a proper loading spinner
-  }
-
-  if (storeSettings.initialSetupDone) {
-    redirect('/dashboard');
-  } else {
-    redirect('/onboarding');
-  }
+  return <div>جار التحميل...</div>; // Or a proper loading spinner
 }

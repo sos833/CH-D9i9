@@ -26,6 +26,7 @@ interface AppContextType {
 
   storeSettings: StoreSettings | null;
   setStoreSettings: (settings: StoreSettings) => Promise<void>;
+  loadingSettings: boolean;
 
   cashWithdrawals: CashWithdrawal[];
   setCashWithdrawals: (withdrawals: CashWithdrawal[]) => void;
@@ -41,7 +42,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const { data: customers = [], setData: setCustomers } = useCollection<Customer>(firestore ? collection(firestore, 'customers') : null);
   const { data: transactions = [], setData: setTransactions } = useCollection<Transaction>(firestore ? collection(firestore, 'transactions') : null);
   const { data: cashWithdrawals = [], setData: setCashWithdrawals } = useCollection<CashWithdrawal>(firestore ? collection(firestore, 'cashWithdrawals') : null);
-  const { data: storeSettings, setData: setStoreSettingsDoc } = useDoc<StoreSettings>(firestore ? doc(firestore, 'config/store') : null);
+  const { data: storeSettings, loading: loadingSettings, setData: setStoreSettingsDoc } = useDoc<StoreSettings>(firestore ? doc(firestore, 'config/store') : null);
   
   const addProduct = async (product: Omit<Product, 'id'>) => {
     if (!firestore) return;
@@ -144,6 +145,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     addTransaction,
 
     storeSettings: storeSettings || null,
+    loadingSettings,
     setStoreSettings,
 
     cashWithdrawals,
