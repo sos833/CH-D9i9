@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCollection, useDoc } from '@/firebase';
-import { collection, doc, setDoc, addDoc, deleteDoc, writeBatch, type DocumentReference, type FirestoreError } from 'firebase/firestore';
+import { collection, doc, setDoc, addDoc, deleteDoc, writeBatch, getDocs, query, type DocumentReference, type FirestoreError } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { Product, Customer, Transaction, StoreSettings, CashWithdrawal } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -32,6 +32,8 @@ interface AppContextType {
   setStoreSettings: (settings: StoreSettings) => Promise<void>;
   
   addCashWithdrawal: (withdrawal: Omit<CashWithdrawal, 'id'>) => Promise<void>;
+
+  resetStore: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -205,6 +207,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const resetStore = async () => {
+    if (!firestore) return;
+
+    const collectionsToDelete = ['products', 'customers', 'transactions', 'cashWithdrawals'];
+    
+    try {
+      const batch = writeBatch(firestore);
+
+      for (const coll of collectionsToDelete) {
+        const snapshot = await getDocs(query(collection(firestore, coll)));
+        snapshot.docs.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+      }
+
+      const storeConfigRef = doc(firestore, 'config', 'store');
+      batch.update(storeConfigRef, { initialSetupDone: false, storeName: '', initialCash: 0 });
+
+      await batch.commit();
+
+    } catch (error: any) {
+      console.error("Error resetting store:", error);
+      handleFirestoreError(error as FirestoreError, {
+        path: 'multiple collections',
+        operation: 'delete',
+      });
+      throw error;
+    }
+  };
+
   const value: AppContextType = {
     products,
     customers,
@@ -227,6 +259,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setStoreSettings,
 
     addCashWithdrawal,
+
+    resetStore,
   };
 
   return (

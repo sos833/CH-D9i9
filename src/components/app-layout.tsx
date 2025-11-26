@@ -13,6 +13,7 @@ import {
   Wallet,
   LineChart,
   Calculator,
+  Settings,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -40,6 +41,7 @@ const navItems = [
   { href: '/cashbox', icon: <Wallet />, label: 'الصندوق' },
   { href: '/analytics', icon: <LineChart />, label: 'التحاليل' },
   { href: '/calculator', icon: <Calculator />, label: 'آلة حاسبة' },
+  { href: '/settings', icon: <Settings />, label: 'الإعدادات' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
