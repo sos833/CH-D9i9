@@ -107,7 +107,7 @@ export default function OnboardingPage() {
         
         {/* تذييل بسيط */}
         <div className="bg-emerald-950/30 p-4 text-center text-xs text-slate-500 border-t border-white/5">
-          تصميم وبرمجة الإخوة بوستة
+          بواسطة Lorzz
         </div>
       </form>
     </div>
