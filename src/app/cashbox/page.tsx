@@ -97,45 +97,12 @@ export default function CashboxPage() {
   return (
     <AppLayout>
       <div className="flex items-center justify-between gap-4">
-         <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />
-         <Dialog open={openWithdrawal} onOpenChange={setOpenWithdrawal}>
-            <DialogTrigger asChild>
-              <Button>
-                سحب أموال
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>سحب أموال من الصندوق</DialogTitle>
-                <DialogDescription>
-                  الرصيد الحالي: {currentCashInBox.toFixed(2)} د.ج
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="withdrawal-amount" className="text-right">
-                    المبلغ
-                  </Label>
-                  <Input
-                    id="withdrawal-amount"
-                    type="number"
-                    placeholder="0.00"
-                    className="col-span-3"
-                    value={withdrawalAmount}
-                    onChange={(e) => setWithdrawalAmount(e.target.value)}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="secondary">
-                    إلغاء
-                  </Button>
-                </DialogClose>
-                <Button type="button" onClick={handleSaveWithdrawal}>تأكيد السحب</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+        <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />
+        <DialogTrigger asChild>
+          <Button onClick={() => setOpenWithdrawal(true)}>
+            سحب أموال
+          </Button>
+        </DialogTrigger>
       </div>
      
       <div className="grid gap-4 grid-cols-1 md:grid-cols-3 mt-4">
@@ -169,6 +136,39 @@ export default function CashboxPage() {
         />
       </div>
 
+      <Dialog open={openWithdrawal} onOpenChange={setOpenWithdrawal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>سحب أموال من الصندوق</DialogTitle>
+            <DialogDescription>
+              الرصيد الحالي: {currentCashInBox.toFixed(2)} د.ج
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="withdrawal-amount" className="text-right">
+                المبلغ
+              </Label>
+              <Input
+                id="withdrawal-amount"
+                type="number"
+                placeholder="0.00"
+                className="col-span-3"
+                value={withdrawalAmount}
+                onChange={(e) => setWithdrawalAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                إلغاء
+              </Button>
+            </DialogClose>
+            <Button type="button" onClick={handleSaveWithdrawal}>تأكيد السحب</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
