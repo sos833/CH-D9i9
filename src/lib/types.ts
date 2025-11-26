@@ -41,3 +41,24 @@ export type CashWithdrawal = {
   date: string;
   amount: number;
 };
+
+export type Supplier = {
+  id: string;
+  name: string;
+  company: string;
+  phone: string;
+};
+
+export type Purchase = {
+  id: string;
+  date: string; // ISO string
+  supplierId: string;
+  supplierName: string;
+  items: {
+    productId: string;
+    productName: string;
+    quantity: number;
+    costPrice: number;
+  }[];
+  totalCost: number;
+};

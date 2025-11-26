@@ -14,8 +14,13 @@ import {
   LineChart,
   Calculator,
   Settings,
+  Truck,
+  Moon,
+  Sun,
+  ShoppingBasket
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { useTheme } from "next-themes"
 
 import {
   SidebarProvider,
@@ -25,12 +30,19 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarFooter
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader as SheetHeaderPrimitive } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/app-context';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const navItems = [
   { href: '/dashboard', icon: <LayoutDashboard />, label: 'لوحة المعلومات' },
@@ -38,11 +50,40 @@ const navItems = [
   { href: '/transactions', icon: <Receipt />, label: 'المعاملات' },
   { href: '/inventory', icon: <Package />, label: 'المخزون' },
   { href: '/customers', icon: <Users />, label: 'العملاء' },
+  { href: '/suppliers', icon: <Truck />, label: 'الموردون' },
+  { href: '/purchases', icon: <ShoppingBasket />, label: 'المشتريات' },
   { href: '/cashbox', icon: <Wallet />, label: 'الصندوق' },
   { href: '/analytics', icon: <LineChart />, label: 'التحاليل' },
   { href: '/calculator', icon: <Calculator />, label: 'آلة حاسبة' },
   { href: '/settings', icon: <Settings />, label: 'الإعدادات' },
 ];
+
+function ThemeToggle() {
+  const { setTheme, theme } = useTheme()
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setTheme("light")}>
+          فاتح
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("dark")}>
+          داكن
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("system")}>
+          النظام
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -73,7 +114,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.href}
+                    isActive={pathname.startsWith(item.href)}
                     tooltip={{ children: item.label, side: 'left' }}
                   >
                     <Link href={item.href}>
@@ -109,7 +150,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       href={item.href}
                       className={cn(
                         'flex items-center gap-4 px-2.5',
-                        pathname === item.href ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:text-sidebar-accent-foreground',
+                        pathname.startsWith(item.href) ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:text-sidebar-accent-foreground',
                       )}
                     >
                       {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
@@ -119,6 +160,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </nav>
               </SheetContent>
             </Sheet>
+            <div className="ml-auto flex items-center gap-2">
+              <ThemeToggle />
+            </div>
           </header>
           <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0">
             {children}

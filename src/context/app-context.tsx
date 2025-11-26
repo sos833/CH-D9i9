@@ -2,18 +2,19 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCollection, useDoc } from '@/firebase';
-import { collection, doc, setDoc, addDoc, deleteDoc, writeBatch, getDocs, query, type DocumentReference, type FirestoreError } from 'firebase/firestore';
+import { collection, doc, setDoc, addDoc, deleteDoc, writeBatch, getDocs, query, serverTimestamp, type DocumentReference, type FirestoreError } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import type { Product, Customer, Transaction, StoreSettings, CashWithdrawal } from '@/lib/types';
+import type { Product, Customer, Transaction, StoreSettings, CashWithdrawal, Supplier, Purchase } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-
 interface AppContextType {
   products: Product[];
   customers: Customer[];
+  suppliers: Supplier[];
   transactions: Transaction[];
+  purchases: Purchase[];
   storeSettings: StoreSettings | null;
   cashWithdrawals: CashWithdrawal[];
   loading: boolean;
@@ -21,13 +22,19 @@ interface AppContextType {
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (productId: string, data: Partial<Product>) => Promise<void>;
   updateProductsStock: (items: { productId: string; quantity: number }[]) => Promise<void>;
+  increaseProductsStock: (items: { productId: string; quantity: number }[]) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
   
   addCustomer: (customer: Omit<Customer, 'id'>) => Promise<DocumentReference | undefined>;
   updateCustomer: (customerId: string, data: Partial<Customer>) => Promise<void>;
   updateCustomerDebt: (customerId: string, amount: number) => Promise<void>;
+
+  addSupplier: (supplier: Omit<Supplier, 'id'>) => Promise<void>;
+  updateSupplier: (supplierId: string, data: Partial<Supplier>) => Promise<void>;
+  deleteSupplier: (supplierId: string) => Promise<void>;
   
   addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
+  addPurchase: (purchase: Omit<Purchase, 'id'>) => Promise<void>;
 
   setStoreSettings: (settings: StoreSettings) => Promise<void>;
   
@@ -38,7 +45,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const handleFirestoreError = (error: FirestoreError, context: { path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any }) => {
+const handleFirestoreError = (error: FirestoreError, context: { path: string, operation: 'create' | 'update' | 'delete' | 'list' | 'get', requestResourceData?: any }) => {
     if (error.code === 'permission-denied') {
         const customError = new FirestorePermissionError(context);
         errorEmitter.emit('permission-error', customError);
@@ -48,13 +55,14 @@ const handleFirestoreError = (error: FirestoreError, context: { path: string, op
     }
 };
 
-
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const firestore = useFirestore();
 
   const { data: products = [], loading: loadingProducts } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
   const { data: customers = [], loading: loadingCustomers } = useCollection<Customer>(firestore ? collection(firestore, 'customers') : null);
+  const { data: suppliers = [], loading: loadingSuppliers } = useCollection<Supplier>(firestore ? collection(firestore, 'suppliers') : null);
   const { data: transactions = [], loading: loadingTransactions } = useCollection<Transaction>(firestore ? collection(firestore, 'transactions') : null);
+  const { data: purchases = [], loading: loadingPurchases } = useCollection<Purchase>(firestore ? collection(firestore, 'purchases') : null);
   const { data: cashWithdrawals = [], loading: loadingWithdrawals } = useCollection<CashWithdrawal>(firestore ? collection(firestore, 'cashWithdrawals') : null);
   const { data: storeSettings, loading: loadingSettings } = useDoc<StoreSettings>(firestore ? doc(firestore, 'config/store') : null);
 
@@ -109,6 +117,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: { items: stockUpdates }
         });
       }
+  };
+
+  const increaseProductsStock = async (items: { productId: string; quantity: number }[]) => {
+    if (!firestore) return;
+    const batch = writeBatch(firestore);
+    
+    const stockUpdates = items.map(item => {
+      const product = products.find(p => p.id === item.productId);
+      if (product) {
+        const newStock = product.stock + item.quantity;
+        const productRef = doc(firestore, 'products', item.productId);
+        batch.update(productRef, { stock: newStock });
+        return { productId: item.productId, newStock };
+      }
+      return null;
+    }).filter(Boolean);
+
+    try {
+      await batch.commit();
+    } catch (error) {
+       handleFirestoreError(error as FirestoreError, {
+          path: `products/{multiple_products}`,
+          operation: 'update',
+          requestResourceData: { items: stockUpdates }
+      });
+    }
   };
 
   const deleteProduct = async (productId: string) => {
@@ -167,6 +201,44 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
     }
   };
+
+  const addSupplier = async (supplier: Omit<Supplier, 'id'>) => {
+    if (!firestore) return;
+    try {
+      await addDoc(collection(firestore, 'suppliers'), supplier);
+    } catch (error) {
+      handleFirestoreError(error as FirestoreError, {
+        path: 'suppliers/{supplierId}',
+        operation: 'create',
+        requestResourceData: supplier
+      });
+    }
+  };
+
+  const updateSupplier = async (supplierId: string, data: Partial<Supplier>) => {
+    if (!firestore) return;
+    try {
+      await setDoc(doc(firestore, 'suppliers', supplierId), data, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error as FirestoreError, {
+        path: `suppliers/${supplierId}`,
+        operation: 'update',
+        requestResourceData: data
+      });
+    }
+  };
+
+  const deleteSupplier = async (supplierId: string) => {
+    if (!firestore) return;
+    try {
+      await deleteDoc(doc(firestore, 'suppliers', supplierId));
+    } catch (error) {
+      handleFirestoreError(error as FirestoreError, {
+        path: `suppliers/${supplierId}`,
+        operation: 'delete'
+      });
+    }
+  };
   
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
      if (!firestore) return;
@@ -179,6 +251,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             requestResourceData: transaction
         });
       }
+  };
+  
+  const addPurchase = async (purchase: Omit<Purchase, 'id'>) => {
+    if (!firestore) return;
+    try {
+      await addDoc(collection(firestore, 'purchases'), purchase);
+    } catch (error) {
+      handleFirestoreError(error as FirestoreError, {
+        path: 'purchases/{purchaseId}',
+        operation: 'create',
+        requestResourceData: purchase
+      });
+    }
   };
 
   const setStoreSettings = async (settings: StoreSettings) => {
@@ -210,7 +295,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const resetStore = async () => {
     if (!firestore) return;
 
-    const collectionsToDelete = ['products', 'customers', 'transactions', 'cashWithdrawals'];
+    const collectionsToDelete = ['products', 'customers', 'transactions', 'cashWithdrawals', 'suppliers', 'purchases'];
     
     try {
       const batch = writeBatch(firestore);
@@ -240,21 +325,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const value: AppContextType = {
     products,
     customers,
+    suppliers,
     transactions,
+    purchases,
     storeSettings,
     cashWithdrawals,
-    loading: loadingProducts || loadingCustomers || loadingTransactions || loadingSettings || loadingWithdrawals,
+    loading: loadingProducts || loadingCustomers || loadingTransactions || loadingSettings || loadingWithdrawals || loadingSuppliers || loadingPurchases,
     
     addProduct,
     updateProduct,
     updateProductsStock,
+    increaseProductsStock,
     deleteProduct,
 
     addCustomer,
     updateCustomer,
     updateCustomerDebt,
+
+    addSupplier,
+    updateSupplier,
+    deleteSupplier,
     
     addTransaction,
+    addPurchase,
 
     setStoreSettings,
 
