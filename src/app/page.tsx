@@ -17,5 +17,10 @@ export default function Home() {
     }
   }, [storeSettings, loadingSettings]);
 
-  return <div>جار التحميل...</div>; // Or a proper loading spinner
+  // Show a loading state while settings are being fetched.
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <p>جار التحميل...</p>
+    </div>
+  );
 }
