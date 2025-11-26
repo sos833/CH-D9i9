@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, query, collection, where, Query, CollectionReference } from 'firebase/firestore';
-import type { DocumentData, QuerySnapshot } from 'firebase/firestore';
+import type { DocumentData, QuerySnapshot, FirestoreError } from 'firebase/firestore';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 export function useCollection<T>(q: Query | CollectionReference | null) {
   const [data, setData] = useState<T[]>([]);
@@ -26,9 +28,19 @@ export function useCollection<T>(q: Query | CollectionReference | null) {
         setData(docs);
         setLoading(false);
       },
-      (err: Error) => {
-        console.error(err);
-        setError(err);
+      (err: FirestoreError) => {
+        if (err.code === 'permission-denied') {
+            const path = (q as CollectionReference).path;
+            const customError = new FirestorePermissionError({
+                path: path,
+                operation: 'list'
+            });
+            errorEmitter.emit('permission-error', customError);
+            setError(customError);
+        } else {
+            console.error(err);
+            setError(err);
+        }
         setLoading(false);
       }
     );

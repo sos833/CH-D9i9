@@ -1,12 +1,14 @@
-
 "use client";
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCollection, useDoc } from '@/firebase';
-import { collection, doc, setDoc, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, setDoc, addDoc, deleteDoc, writeBatch, type DocumentReference, type FirestoreError } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { Product, Customer, Transaction, StoreSettings, CashWithdrawal } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 interface AppContextType {
   products: Product[];
@@ -34,6 +36,17 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const handleFirestoreError = (error: FirestoreError, context: { path: string, operation: 'create' | 'update' | 'delete', requestResourceData?: any }) => {
+    if (error.code === 'permission-denied') {
+        const customError = new FirestorePermissionError(context);
+        errorEmitter.emit('permission-error', customError);
+    } else {
+        console.error(`Error during ${context.operation} on ${context.path}:`, error);
+        toast({ variant: 'destructive', title: 'Firestore Error', description: `Could not perform ${context.operation} operation.` });
+    }
+};
+
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const firestore = useFirestore();
 
@@ -48,8 +61,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       await addDoc(collection(firestore, 'products'), product);
     } catch (error) {
-      console.error("Error adding product: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not add product.' });
+        handleFirestoreError(error as FirestoreError, {
+            path: 'products/{productId}',
+            operation: 'create',
+            requestResourceData: product
+        });
     }
   };
 
@@ -59,8 +75,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const productRef = doc(firestore, 'products', productId);
       await setDoc(productRef, data, { merge: true });
     } catch (error) {
-      console.error("Error updating product: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not update product.' });
+       handleFirestoreError(error as FirestoreError, {
+            path: `products/${productId}`,
+            operation: 'update',
+            requestResourceData: data
+        });
     }
   };
   
@@ -68,20 +87,25 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (!firestore) return;
       const batch = writeBatch(firestore);
       
-      items.forEach(item => {
+      const stockUpdates = items.map(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          const newStock = product.stock - item.quantity;
           const productRef = doc(firestore, 'products', item.productId);
-          const product = products.find(p => p.id === item.productId);
-          if (product) {
-            const newStock = product.stock - item.quantity;
-            batch.update(productRef, { stock: newStock });
-          }
-      });
-      
+          batch.update(productRef, { stock: newStock });
+          return { productId: item.productId, newStock };
+        }
+        return null;
+      }).filter(Boolean);
+
       try {
         await batch.commit();
       } catch (error) {
-         console.error("Error updating products stock: ", error);
-         toast({ variant: 'destructive', title: 'Error', description: 'Could not update stock.' });
+         handleFirestoreError(error as FirestoreError, {
+            path: `products/{multiple_products}`,
+            operation: 'update',
+            requestResourceData: { items: stockUpdates }
+        });
       }
   };
 
@@ -90,18 +114,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       await deleteDoc(doc(firestore, 'products', productId));
     } catch (error) {
-       console.error("Error deleting product: ", error);
-       toast({ variant: 'destructive', title: 'Error', description: 'Could not delete product.' });
+        handleFirestoreError(error as FirestoreError, {
+            path: `products/${productId}`,
+            operation: 'delete'
+        });
     }
   }
 
-  const addCustomer = async (customer: Omit<Customer, 'id'>) => {
-    if (!firestore) return;
+  const addCustomer = async (customer: Omit<Customer, 'id'>): Promise<DocumentReference | undefined> => {
+    if (!firestore) return undefined;
      try {
       return await addDoc(collection(firestore, 'customers'), customer);
     } catch (error) {
-      console.error("Error adding customer: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not add customer.' });
+      handleFirestoreError(error as FirestoreError, {
+        path: 'customers/{customerId}',
+        operation: 'create',
+        requestResourceData: customer
+      });
+      return undefined;
     }
   };
   
@@ -110,8 +140,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
      try {
        await setDoc(doc(firestore, 'customers', customerId), data, { merge: true });
      } catch (error) {
-       console.error("Error updating customer: ", error);
-       toast({ variant: 'destructive', title: 'Error', description: 'Could not update customer.' });
+       handleFirestoreError(error as FirestoreError, {
+            path: `customers/${customerId}`,
+            operation: 'update',
+            requestResourceData: data
+        });
      }
   };
 
@@ -124,8 +157,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         try {
             await setDoc(customerRef, { totalDebt: newDebt }, { merge: true });
         } catch (error) {
-            console.error("Error updating customer debt: ", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not update customer debt.' });
+            handleFirestoreError(error as FirestoreError, {
+                path: `customers/${customerId}`,
+                operation: 'update',
+                requestResourceData: { totalDebt: newDebt }
+            });
         }
     }
   };
@@ -135,8 +171,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       try {
         await addDoc(collection(firestore, 'transactions'), transaction);
       } catch (error) {
-        console.error("Error adding transaction: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not add transaction.' });
+        handleFirestoreError(error as FirestoreError, {
+            path: 'transactions/{transactionId}',
+            operation: 'create',
+            requestResourceData: transaction
+        });
       }
   };
 
@@ -145,8 +184,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       await setDoc(doc(firestore, 'config', 'store'), settings);
     } catch (error) {
-      console.error("Error setting store settings: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not save settings.' });
+      handleFirestoreError(error as FirestoreError, {
+            path: 'config/store',
+            operation: 'update', // setDoc can be create or update
+            requestResourceData: settings
+      });
     }
   };
   
@@ -155,8 +197,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       await addDoc(collection(firestore, 'cashWithdrawals'), withdrawal);
     } catch (error) {
-      console.error("Error adding cash withdrawal: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not add withdrawal.' });
+      handleFirestoreError(error as FirestoreError, {
+        path: 'cashWithdrawals/{withdrawalId}',
+        operation: 'create',
+        requestResourceData: withdrawal
+      });
     }
   };
 
@@ -198,5 +243,3 @@ export const useApp = () => {
   }
   return context;
 };
-
-    

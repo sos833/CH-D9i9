@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, DocumentReference } from 'firebase/firestore';
-import type { DocumentData, DocumentSnapshot } from 'firebase/firestore';
+import type { DocumentData, DocumentSnapshot, FirestoreError } from 'firebase/firestore';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 export function useDoc<T>(ref: DocumentReference | null) {
   const [data, setData] = useState<T | null>(null);
@@ -29,9 +31,18 @@ export function useDoc<T>(ref: DocumentReference | null) {
         }
         setLoading(false);
       },
-      (err: Error) => {
-        console.error(err);
-        setError(err);
+      (err: FirestoreError) => {
+        if (err.code === 'permission-denied') {
+            const customError = new FirestorePermissionError({
+                path: ref.path,
+                operation: 'get'
+            });
+            errorEmitter.emit('permission-error', customError);
+            setError(customError);
+        } else {
+            console.error(err);
+            setError(err);
+        }
         setLoading(false);
       }
     );
