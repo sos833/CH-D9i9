@@ -126,60 +126,6 @@
             }
         },
         "required": ["storeName", "initialCash", "initialSetupDone"]
-    },
-    "Supplier": {
-      "title": "Supplier",
-      "description": "Represents a product supplier.",
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "The name of the supplier."
-        },
-        "company": {
-          "type": "string",
-          "description": "The supplier's company name."
-        },
-        "phone": {
-          "type": "string",
-          "description": "The supplier's phone number."
-        }
-      },
-      "required": ["name"]
-    },
-    "Purchase": {
-      "title": "Purchase",
-      "description": "Represents a purchase invoice from a supplier.",
-      "type": "object",
-      "properties": {
-        "date": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "supplierId": {
-          "type": "string"
-        },
-        "supplierName": {
-          "type": "string"
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "productId": { "type": "string" },
-              "productName": { "type": "string" },
-              "quantity": { "type": "number" },
-              "costPrice": { "type": "number" }
-            },
-            "required": ["productId", "productName", "quantity", "costPrice"]
-          }
-        },
-        "totalCost": {
-          "type": "number"
-        }
-      },
-      "required": ["date", "supplierId", "supplierName", "items", "totalCost"]
     }
   },
   "auth": {
@@ -205,14 +151,6 @@
     "/config/store": {
         "schema": { "$ref": "#/entities/StoreSettings"},
         "description": "Stores general store settings."
-    },
-    "/suppliers/{supplierId}": {
-      "schema": { "$ref": "#/entities/Supplier" },
-      "description": "Stores supplier information."
-    },
-    "/purchases/{purchaseId}": {
-      "schema": { "$ref": "#/entities/Purchase" },
-      "description": "Stores purchase invoice records."
     }
   }
 }

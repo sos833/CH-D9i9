@@ -14,10 +14,8 @@ import {
   LineChart,
   Calculator,
   Settings,
-  Truck,
   Moon,
   Sun,
-  ShoppingBasket
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useTheme } from "next-themes"
@@ -50,8 +48,6 @@ const navItems = [
   { href: '/transactions', icon: <Receipt />, label: 'المعاملات' },
   { href: '/inventory', icon: <Package />, label: 'المخزون' },
   { href: '/customers', icon: <Users />, label: 'العملاء' },
-  { href: '/suppliers', icon: <Truck />, label: 'الموردون' },
-  { href: '/purchases', icon: <ShoppingBasket />, label: 'المشتريات' },
   { href: '/cashbox', icon: <Wallet />, label: 'الصندوق' },
   { href: '/analytics', icon: <LineChart />, label: 'التحاليل' },
   { href: '/calculator', icon: <Calculator />, label: 'آلة حاسبة' },

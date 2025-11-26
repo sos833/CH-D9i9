@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, ArrowUpDown } from "lucide-react"
+import { MoreHorizontal, ArrowUpDown, Copy, Phone } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -14,6 +14,30 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { Customer } from "@/lib/types"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useToast } from "@/hooks/use-toast"
+
+const PhoneCell = ({ phone }: { phone: string }) => {
+    const { toast } = useToast();
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(phone);
+        toast({ title: "تم النسخ", description: "تم نسخ رقم الهاتف إلى الحافظة." });
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <a href={`tel:${phone}`} className="flex items-center gap-1 hover:underline">
+                <Phone className="h-4 w-4" />
+                {phone}
+            </a>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy}>
+                <Copy className="h-4 w-4" />
+                <span className="sr-only">نسخ الرقم</span>
+            </Button>
+        </div>
+    );
+};
+
 
 type ColumnsProps = {
   onAddPayment: (customer: Customer) => void;
@@ -61,6 +85,10 @@ export const columns = ({ onAddPayment, onEdit, onViewDetails }: ColumnsProps): 
   {
     accessorKey: "phone",
     header: "الهاتف",
+    cell: ({ row }) => {
+        const phone = row.getValue("phone") as string;
+        return <PhoneCell phone={phone} />;
+    }
   },
   {
     accessorKey: "totalDebt",
