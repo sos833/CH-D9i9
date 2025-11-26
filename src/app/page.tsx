@@ -5,17 +5,17 @@ import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function Home() {
-  const { storeSettings, loadingSettings } = useApp();
+  const { storeSettings, loading } = useApp();
 
   useEffect(() => {
-    if (!loadingSettings) {
+    if (!loading) {
       if (storeSettings?.initialSetupDone) {
         redirect('/dashboard');
       } else {
         redirect('/onboarding');
       }
     }
-  }, [storeSettings, loadingSettings]);
+  }, [storeSettings, loading]);
 
   // Show a loading state while settings are being fetched.
   return (
@@ -24,3 +24,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

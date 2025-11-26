@@ -3,33 +3,32 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCollection, useDoc } from '@/firebase';
-import { collection, doc, setDoc, addDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { Product, Customer, Transaction, StoreSettings, CashWithdrawal } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 
 interface AppContextType {
   products: Product[];
-  setProducts: (products: Product[]) => void;
+  customers: Customer[];
+  transactions: Transaction[];
+  storeSettings: StoreSettings | null;
+  cashWithdrawals: CashWithdrawal[];
+  loading: boolean;
+  
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
-  updateProduct: (product: Product) => Promise<void>;
+  updateProduct: (productId: string, data: Partial<Product>) => Promise<void>;
+  updateProductsStock: (items: { productId: string; quantity: number }[]) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
   
-  customers: Customer[];
-  setCustomers: (customers: Customer[]) => void;
-  addCustomer: (customer: Omit<Customer, 'id' | 'totalDebt'>, debt: number) => Promise<void>;
-  updateCustomer: (customer: Customer) => Promise<void>;
+  addCustomer: (customer: Omit<Customer, 'id'>) => Promise<DocumentReference | undefined>;
+  updateCustomer: (customerId: string, data: Partial<Customer>) => Promise<void>;
+  updateCustomerDebt: (customerId: string, amount: number) => Promise<void>;
   
-  transactions: Transaction[];
-  setTransactions: (transactions: Transaction[]) => void;
   addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
 
-  storeSettings: StoreSettings | null;
   setStoreSettings: (settings: StoreSettings) => Promise<void>;
-  loadingSettings: boolean;
-
-  cashWithdrawals: CashWithdrawal[];
-  setCashWithdrawals: (withdrawals: CashWithdrawal[]) => void;
+  
   addCashWithdrawal: (withdrawal: Omit<CashWithdrawal, 'id'>) => Promise<void>;
 }
 
@@ -38,12 +37,12 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const firestore = useFirestore();
 
-  const { data: products = [], setData: setProducts } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
-  const { data: customers = [], setData: setCustomers } = useCollection<Customer>(firestore ? collection(firestore, 'customers') : null);
-  const { data: transactions = [], setData: setTransactions } = useCollection<Transaction>(firestore ? collection(firestore, 'transactions') : null);
-  const { data: cashWithdrawals = [], setData: setCashWithdrawals } = useCollection<CashWithdrawal>(firestore ? collection(firestore, 'cashWithdrawals') : null);
-  const { data: storeSettings, loading: loadingSettings, setData: setStoreSettingsDoc } = useDoc<StoreSettings>(firestore ? doc(firestore, 'config/store') : null);
-  
+  const { data: products = [], loading: loadingProducts } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
+  const { data: customers = [], loading: loadingCustomers } = useCollection<Customer>(firestore ? collection(firestore, 'customers') : null);
+  const { data: transactions = [], loading: loadingTransactions } = useCollection<Transaction>(firestore ? collection(firestore, 'transactions') : null);
+  const { data: cashWithdrawals = [], loading: loadingWithdrawals } = useCollection<CashWithdrawal>(firestore ? collection(firestore, 'cashWithdrawals') : null);
+  const { data: storeSettings, loading: loadingSettings } = useDoc<StoreSettings>(firestore ? doc(firestore, 'config/store') : null);
+
   const addProduct = async (product: Omit<Product, 'id'>) => {
     if (!firestore) return;
     try {
@@ -54,47 +53,81 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updateProduct = async (product: Product) => {
+  const updateProduct = async (productId: string, data: Partial<Product>) => {
     if (!firestore) return;
     try {
-      const productRef = doc(firestore, 'products', product.id);
-      await setDoc(productRef, product, { merge: true });
+      const productRef = doc(firestore, 'products', productId);
+      await setDoc(productRef, data, { merge: true });
     } catch (error) {
       console.error("Error updating product: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not update product.' });
     }
   };
   
+  const updateProductsStock = async (items: { productId: string; quantity: number }[]) => {
+      if (!firestore) return;
+      const batch = writeBatch(firestore);
+      
+      items.forEach(item => {
+          const productRef = doc(firestore, 'products', item.productId);
+          const product = products.find(p => p.id === item.productId);
+          if (product) {
+            const newStock = product.stock - item.quantity;
+            batch.update(productRef, { stock: newStock });
+          }
+      });
+      
+      try {
+        await batch.commit();
+      } catch (error) {
+         console.error("Error updating products stock: ", error);
+         toast({ variant: 'destructive', title: 'Error', description: 'Could not update stock.' });
+      }
+  };
+
   const deleteProduct = async (productId: string) => {
     if (!firestore) return;
     try {
       await deleteDoc(doc(firestore, 'products', productId));
-    } catch (error)
-    {
+    } catch (error) {
        console.error("Error deleting product: ", error);
        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete product.' });
     }
   }
 
-  const addCustomer = async (customer: Omit<Customer, 'id' | 'totalDebt'>, debt: number) => {
+  const addCustomer = async (customer: Omit<Customer, 'id'>) => {
     if (!firestore) return;
      try {
-      const customerWithDebt = { ...customer, totalDebt: debt };
-      await addDoc(collection(firestore, 'customers'), customerWithDebt);
+      return await addDoc(collection(firestore, 'customers'), customer);
     } catch (error) {
       console.error("Error adding customer: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not add customer.' });
     }
   };
   
-  const updateCustomer = async (customer: Customer) => {
+  const updateCustomer = async (customerId: string, data: Partial<Customer>) => {
      if (!firestore) return;
      try {
-       await setDoc(doc(firestore, 'customers', customer.id), customer, { merge: true });
+       await setDoc(doc(firestore, 'customers', customerId), data, { merge: true });
      } catch (error) {
        console.error("Error updating customer: ", error);
        toast({ variant: 'destructive', title: 'Error', description: 'Could not update customer.' });
      }
+  };
+
+  const updateCustomerDebt = async (customerId: string, amount: number) => {
+    if (!firestore) return;
+    const customerRef = doc(firestore, 'customers', customerId);
+    const customer = customers.find(c => c.id === customerId);
+    if (customer) {
+        const newDebt = customer.totalDebt + amount;
+        try {
+            await setDoc(customerRef, { totalDebt: newDebt }, { merge: true });
+        } catch (error) {
+            console.error("Error updating customer debt: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not update customer debt.' });
+        }
+    }
   };
   
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
@@ -127,32 +160,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-
   const value: AppContextType = {
     products,
-    setProducts: setProducts as any, // This is a bit of a hack, we should not expose setData directly
+    customers,
+    transactions,
+    storeSettings,
+    cashWithdrawals,
+    loading: loadingProducts || loadingCustomers || loadingTransactions || loadingSettings || loadingWithdrawals,
+    
     addProduct,
     updateProduct,
+    updateProductsStock,
     deleteProduct,
 
-    customers,
-    setCustomers: setCustomers as any,
     addCustomer,
     updateCustomer,
+    updateCustomerDebt,
     
-    transactions,
-    setTransactions: setTransactions as any,
     addTransaction,
 
-    storeSettings: storeSettings || null,
-    loadingSettings,
     setStoreSettings,
 
-    cashWithdrawals,
-    setCashWithdrawals: setCashWithdrawals as any,
     addCashWithdrawal,
   };
-
 
   return (
     <AppContext.Provider value={value}>
@@ -168,3 +198,5 @@ export const useApp = () => {
   }
   return context;
 };
+
+    

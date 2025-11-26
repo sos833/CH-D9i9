@@ -31,15 +31,10 @@ const withdrawalSchema = z.object({
 });
 
 export default function CashboxPage() {
-  const { storeSettings, transactions, cashWithdrawals, setCashWithdrawals } = useApp();
+  const { storeSettings, transactions, cashWithdrawals, addCashWithdrawal, loading } = useApp();
   const { toast } = useToast();
-  const [isClient, setIsClient] = React.useState(false);
   const [openWithdrawal, setOpenWithdrawal] = React.useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = React.useState('');
-
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const totalCashSales = (transactions || [])
     .filter(t => t.paymentMethod === 'cash')
@@ -50,7 +45,7 @@ export default function CashboxPage() {
   const initialCash = storeSettings?.initialCash || 0;
   const currentCashInBox = initialCash + totalCashSales - totalWithdrawn;
 
-  const handleSaveWithdrawal = () => {
+  const handleSaveWithdrawal = async () => {
     const result = withdrawalSchema.safeParse({ amount: withdrawalAmount });
     if (!result.success) {
       toast({
@@ -72,13 +67,12 @@ export default function CashboxPage() {
       return;
     }
 
-    const newWithdrawal: CashWithdrawal = {
-      id: `WDL${Date.now()}`,
+    const newWithdrawal: Omit<CashWithdrawal, 'id'> = {
       date: new Date().toISOString(),
       amount: amountToWithdraw,
     };
     
-    setCashWithdrawals(prev => [...(prev || []), newWithdrawal]);
+    await addCashWithdrawal(newWithdrawal);
     
     toast({
       title: "تم السحب بنجاح",
@@ -89,7 +83,7 @@ export default function CashboxPage() {
     setWithdrawalAmount('');
   };
 
-  if (!isClient) {
+  if (loading) {
     return (
       <AppLayout>
         <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />

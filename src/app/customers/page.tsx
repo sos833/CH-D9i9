@@ -42,8 +42,7 @@ type CartItemData = {
 }
 
 export default function CustomersPage() {
-  const { customers, setCustomers, transactions, setTransactions, setProducts, setCashWithdrawals, cashWithdrawals } = useApp();
-  const [isClient, setIsClient] = React.useState(false);
+  const { customers, transactions, loading, addCustomer, updateCustomer, addTransaction, updateProductsStock, updateCustomerDebt } = useApp();
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openPayment, setOpenPayment] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
@@ -69,13 +68,12 @@ export default function CustomersPage() {
 
   
   React.useEffect(() => {
-    setIsClient(true);
     if (debtAmount > 0) {
       setOpenAdd(true);
     }
   }, [debtAmount]);
 
-  const handleSaveCustomer = () => {
+  const handleSaveCustomer = async () => {
     const result = customerSchema.safeParse({ name: newCustomerName, phone: newCustomerPhone });
     if (!result.success) {
       toast({
@@ -86,41 +84,30 @@ export default function CustomersPage() {
       return;
     }
 
-    const newCustomer: Customer = {
-      id: `CUST${Date.now()}`,
+    const newCustomerData: Omit<Customer, 'id'> = {
       name: newCustomerName,
       phone: newCustomerPhone,
       totalDebt: debtAmount || 0,
     };
     
-    setCustomers(prev => [...prev, newCustomer]);
+    const newCustomerRef = await addCustomer(newCustomerData);
     
-    if (cartFromPOS && debtAmount > 0) {
-        const newTransaction: Transaction = {
-            id: `TXN${Date.now()}`,
+    if (cartFromPOS && debtAmount > 0 && newCustomerRef) {
+        const newTransaction: Omit<Transaction, 'id'> = {
             date: new Date().toISOString(),
             items: cartFromPOS,
             total: debtAmount,
             paymentMethod: 'credit',
-            customerId: newCustomer.id,
-            customerName: newCustomer.name,
+            customerId: newCustomerRef.id,
+            customerName: newCustomerName,
         };
-        setTransactions(prev => [...prev, newTransaction]);
-        
-        setProducts(prevProducts => {
-            return prevProducts.map(p => {
-                const cartItem = cartFromPOS.find(ci => ci.productId === p.id);
-                if (cartItem) {
-                    return { ...p, stock: p.stock - cartItem.quantity };
-                }
-                return p;
-            });
-        });
+        await addTransaction(newTransaction);
+        await updateProductsStock(cartFromPOS.map(item => ({ productId: item.productId, quantity: item.quantity })));
     }
 
     toast({
       title: "تم الحفظ",
-      description: `تمت إضافة العميل ${newCustomer.name} بنجاح.`,
+      description: `تمت إضافة العميل ${newCustomerName} بنجاح.`,
     });
     setOpenAdd(false);
     setNewCustomerName("");
@@ -134,7 +121,7 @@ export default function CustomersPage() {
     setOpenPayment(true);
   };
 
-  const handleSavePayment = () => {
+  const handleSavePayment = async () => {
     if (!selectedCustomer || !paymentAmount) return;
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -146,8 +133,7 @@ export default function CustomersPage() {
       return;
     }
 
-    const paymentTransaction: Transaction = {
-      id: `TXN${Date.now()}`,
+    const paymentTransaction: Omit<Transaction, 'id'> = {
       date: new Date().toISOString(),
       items: [{
         productId: 'DEBT_PAYMENT',
@@ -160,22 +146,18 @@ export default function CustomersPage() {
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.name,
     };
-    setTransactions(prev => [...prev, paymentTransaction]);
-        
+    await addTransaction(paymentTransaction);
+    
     const newTotalDebt = selectedCustomer.totalDebt - amount;
+    
+    await updateCustomer(selectedCustomer.id, { totalDebt: newTotalDebt });
 
-    if (newTotalDebt <= 0.001) { // Use a small threshold for floating point comparison
-        setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
+    if (newTotalDebt <= 0.001) {
         toast({
             title: "تم تسديد الدين",
             description: `تم تسديد دين العميل ${selectedCustomer.name} بالكامل.`,
         });
     } else {
-        setCustomers(customers.map(c => 
-            c.id === selectedCustomer.id 
-                ? { ...c, totalDebt: newTotalDebt } 
-                : c
-        ));
          toast({
           title: "تمت العملية",
           description: `تمت إضافة دفعة بقيمة ${amount.toFixed(2)} د.ج للعميل ${selectedCustomer.name}.`,
@@ -198,7 +180,7 @@ export default function CustomersPage() {
     setOpenDetails(true);
   };
   
-  const handleUpdateCustomer = () => {
+  const handleUpdateCustomer = async () => {
      if (!selectedCustomer) return;
      
      const result = customerSchema.safeParse({ name: editCustomerName, phone: editCustomerPhone });
@@ -211,17 +193,10 @@ export default function CustomersPage() {
         return;
       }
      
-     setCustomers(customers.map(c => 
-        c.id === selectedCustomer.id 
-            ? { ...c, name: editCustomerName, phone: editCustomerPhone } 
-            : c
-     ));
+     await updateCustomer(selectedCustomer.id, { name: editCustomerName, phone: editCustomerPhone });
      
-     setTransactions(prev => prev.map(t =>
-        t.customerId === selectedCustomer.id
-            ? { ...t, customerName: editCustomerName }
-            : t
-     ));
+     // Note: Updating customerName in past transactions can be complex and is omitted here.
+     // It's often better to reference customer by ID and fetch details when needed.
 
      toast({
       title: "تم التحديث",
@@ -301,17 +276,17 @@ export default function CustomersPage() {
           </Dialog>
         </div>
       </div>
-       {isClient ? (
-        <DataTable
-            columns={columns}
-            data={customers.filter(c => c.totalDebt > 0)}
-            filterColumnId="name"
-            filterPlaceholder="تصفية العملاء..."
-        />
-        ) : (
+       {loading ? (
             <div className="rounded-md border h-96 flex items-center justify-center">
                 <p>جار تحميل البيانات...</p>
             </div>
+        ) : (
+        <DataTable
+            columns={columns}
+            data={customers.filter(c => c.totalDebt > 0.01)}
+            filterColumnId="name"
+            filterPlaceholder="تصفية العملاء..."
+        />
         )}
 
        {selectedCustomer && (
@@ -444,7 +419,5 @@ export default function CustomersPage() {
     </AppLayout>
   );
 }
-
-    
 
     

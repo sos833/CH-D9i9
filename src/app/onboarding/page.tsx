@@ -25,7 +25,7 @@ export default function OnboardingPage() {
   const [storeName, setStoreName] = React.useState('');
   const [initialCash, setInitialCash] = React.useState('');
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     
     const cashAmount = parseFloat(initialCash) || 0;
@@ -39,7 +39,7 @@ export default function OnboardingPage() {
       return;
     }
     
-    setStoreSettings({
+    await setStoreSettings({
       storeName: storeName,
       initialCash: cashAmount,
       initialSetupDone: true,
@@ -101,3 +101,5 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
+    

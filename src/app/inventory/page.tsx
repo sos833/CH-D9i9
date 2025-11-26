@@ -1,3 +1,4 @@
+
 "use client";
 
 import AppLayout from "@/components/app-layout";
@@ -34,7 +35,6 @@ import type { Product } from "@/lib/types";
 import { useApp } from "@/context/app-context";
 import { z } from "zod";
 
-
 const productSchema = z.object({
     name: z.string().min(1, "اسم المنتج مطلوب"),
     stock: z.coerce.number().min(0, "المخزون لا يمكن أن يكون سالبًا"),
@@ -43,25 +43,19 @@ const productSchema = z.object({
     barcode: z.string().optional(),
 });
 
-
 export default function InventoryPage() {
-  const { products, setProducts } = useApp();
-  const [isClient, setIsClient] = React.useState(false);
+  const { products, addProduct, updateProduct, deleteProduct, loading } = useApp();
   const [openAdd, setOpenAdd] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
   const [openDelete, setOpenDelete] = React.useState(false);
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
   
   const [newProduct, setNewProduct] = React.useState({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
-  const [editProduct, setEditProduct] = React.useState<Partial<Product>>({});
+  const [editProductState, setEditProductState] = React.useState<Partial<Product>>({});
 
   const { toast } = useToast();
 
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
-
- const handleSave = () => {
+  const handleSave = async () => {
     const result = productSchema.safeParse({
         name: newProduct.name,
         stock: newProduct.stock,
@@ -79,16 +73,11 @@ export default function InventoryPage() {
         return;
     }
     
-    const productToAdd: Product = {
-      id: `PROD${Date.now()}`,
-      name: result.data.name,
-      barcode: result.data.barcode || '',
-      stock: result.data.stock,
-      costPrice: result.data.costPrice,
-      sellingPrice: result.data.sellingPrice,
-    };
-    
-    setProducts(prev => [...prev, productToAdd]);
+    await addProduct({
+        ...result.data,
+        barcode: result.data.barcode || '',
+    });
+
     toast({
       title: "تم الحفظ",
       description: "تمت إضافة المنتج بنجاح.",
@@ -97,14 +86,15 @@ export default function InventoryPage() {
     setNewProduct({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
   };
   
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!selectedProduct) return;
     
     const result = productSchema.safeParse({
-        name: editProduct.name,
-        stock: editProduct.stock,
-        costPrice: editProduct.costPrice,
-        sellingPrice: editProduct.sellingPrice,
+        name: editProductState.name,
+        stock: editProductState.stock,
+        costPrice: editProductState.costPrice,
+        sellingPrice: editProductState.sellingPrice,
+        barcode: editProductState.barcode,
     });
 
     if (!result.success) {
@@ -116,7 +106,7 @@ export default function InventoryPage() {
         return;
     }
 
-    setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, ...result.data } as Product : p));
+    await updateProduct(selectedProduct.id, result.data);
     toast({
       title: "تم التحديث",
       description: "تم تحديث المنتج بنجاح.",
@@ -127,8 +117,9 @@ export default function InventoryPage() {
 
   const handleEditClick = (product: Product) => {
     setSelectedProduct(product);
-    setEditProduct({
+    setEditProductState({
         name: product.name,
+        barcode: product.barcode,
         stock: product.stock,
         costPrice: product.costPrice,
         sellingPrice: product.sellingPrice,
@@ -141,9 +132,9 @@ export default function InventoryPage() {
     setOpenDelete(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!selectedProduct) return;
-    setProducts(products.filter(p => p.id !== selectedProduct.id));
+    await deleteProduct(selectedProduct.id);
     toast({
       title: "تم الحذف",
       description: `تم حذف المنتج "${selectedProduct.name}" بنجاح.`,
@@ -162,9 +153,8 @@ export default function InventoryPage() {
   const handleEditProductChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     const fieldName = id.replace('edit-', '');
-    setEditProduct(prev => ({ ...prev, [fieldName]: value }));
+    setEditProductState(prev => ({ ...prev, [fieldName]: value }));
 };
-
 
   return (
     <AppLayout>
@@ -231,17 +221,17 @@ export default function InventoryPage() {
           </Dialog>
         </div>
       </div>
-      {isClient ? (
+      {loading ? (
+        <div className="rounded-md border h-96 flex items-center justify-center">
+            <p>جار تحميل البيانات...</p>
+        </div>
+       ) : (
         <DataTable
             columns={columns}
             data={products}
             filterColumnId="name"
             filterPlaceholder="تصفية المنتجات..."
         />
-       ) : (
-            <div className="rounded-md border h-96 flex items-center justify-center">
-                <p>جار تحميل البيانات...</p>
-            </div>
        )}
 
        {/* Edit Product Dialog */}
@@ -255,29 +245,35 @@ export default function InventoryPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
+                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-name" className="text-right">
                     الاسم
                   </Label>
-                  <Input id="edit-name" value={editProduct.name || ''} onChange={handleEditProductChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-sellingPrice" className="text-right">
-                    سعر البيع
-                  </Label>
-                  <Input id="edit-sellingPrice" type="number" value={editProduct.sellingPrice || ''} onChange={handleEditProductChange} className="col-span-3" />
+                  <Input id="edit-name" value={editProductState.name || ''} onChange={handleEditProductChange} className="col-span-3" />
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-costPrice" className="text-right">
-                    سعر التكلفة
+                  <Label htmlFor="edit-barcode" className="text-right">
+                    الباركود
                   </Label>
-                  <Input id="edit-costPrice" type="number" value={editProduct.costPrice || ''} onChange={handleEditProductChange} className="col-span-3" />
+                  <Input id="edit-barcode" value={editProductState.barcode || ''} onChange={handleEditProductChange} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-stock" className="text-right">
                     المخزون
                   </Label>
-                  <Input id="edit-stock" type="number" value={editProduct.stock || ''} onChange={handleEditProductChange} className="col-span-3" />
+                  <Input id="edit-stock" type="number" value={editProductState.stock ?? ''} onChange={handleEditProductChange} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-costPrice" className="text-right">
+                    سعر التكلفة
+                  </Label>
+                  <Input id="edit-costPrice" type="number" value={editProductState.costPrice ?? ''} onChange={handleEditProductChange} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-sellingPrice" className="text-right">
+                    سعر البيع
+                  </Label>
+                  <Input id="edit-sellingPrice" type="number" value={editProductState.sellingPrice ?? ''} onChange={handleEditProductChange} className="col-span-3" />
                 </div>
               </div>
               <DialogFooter>
@@ -314,3 +310,5 @@ export default function InventoryPage() {
     </AppLayout>
   );
 }
+
+    

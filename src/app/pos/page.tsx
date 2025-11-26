@@ -44,21 +44,21 @@ import { Label } from "@/components/ui/label";
 import { useApp } from "@/context/app-context";
 import { z } from "zod";
 
-
 const productSchema = z.object({
     name: z.string().min(1, "اسم المنتج مطلوب"),
-    stock: z.coerce.number().min(0, "المخزون لا يمكن أن يكون سالبًا"),
-    costPrice: z.coerce.number().min(0, "سعر التكلفة لا يمكن أن يكون سالبًا"),
     sellingPrice: z.coerce.number().min(0, "سعر البيع لا يمكن أن يكون سالبًا"),
-    barcode: z.string().optional(),
 });
 
+const newProductSchema = productSchema.extend({
+    stock: z.coerce.number().min(0, "المخزون لا يمكن أن يكون سالبًا"),
+    costPrice: z.coerce.number().min(0, "سعر التكلفة لا يمكن أن يكون سالبًا"),
+    barcode: z.string().optional(),
+});
 
 type CartItem = Product & { quantity: number };
 
 export default function PosPage() {
-  const { products, setProducts, setTransactions, customers, setCustomers } = useApp();
-  const [isClient, setIsClient] = React.useState(false);
+  const { products, addProduct, updateProduct, deleteProduct, loading, addTransaction, updateProductsStock } = useApp();
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const { toast } = useToast();
   const router = useRouter();
@@ -71,10 +71,6 @@ export default function PosPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const [newProduct, setNewProduct] = React.useState({ name: '', barcode: '', stock: '', costPrice: '', sellingPrice: '' });
-
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -136,7 +132,7 @@ export default function PosPage() {
 
   const total = cart.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
 
-  const processSale = (paymentMethod: 'cash' | 'credit') => {
+  const processSale = async (paymentMethod: 'cash' | 'credit') => {
     if (cart.length === 0) {
       toast({
         variant: "destructive",
@@ -146,46 +142,31 @@ export default function PosPage() {
       return;
     }
 
+    const cartItemsForTransaction = cart.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.sellingPrice
+      }));
+
     if (paymentMethod === 'cash') {
-        const newTransaction: Transaction = {
-          id: `TXN${Date.now()}`,
+        const newTransaction: Omit<Transaction, 'id'> = {
           date: new Date().toISOString(),
-          items: cart.map(item => ({
-            productId: item.id,
-            productName: item.name,
-            quantity: item.quantity,
-            price: item.sellingPrice
-          })),
+          items: cartItemsForTransaction,
           total: total,
           paymentMethod: 'cash',
         };
-        setTransactions(prev => [...prev, newTransaction]);
+        await addTransaction(newTransaction);
+        await updateProductsStock(cart.map(item => ({ productId: item.id, quantity: item.quantity })));
         
-        setProducts(prevProducts => {
-          return prevProducts.map(p => {
-            const cartItem = cart.find(ci => ci.id === p.id);
-            if (cartItem) {
-              return { ...p, stock: p.stock - cartItem.quantity };
-            }
-            return p;
-          });
-        });
-
         toast({
           title: "تم الدفع",
           description: `تم استلام مبلغ ${total.toFixed(2)} د.ج نقدًا.`,
         });
         clearCart();
-    } else if (paymentMethod === 'credit') {
-        const debtAmount = total;
-        const cartData = cart.map(item => ({
-            productId: item.id,
-            productName: item.name,
-            quantity: item.quantity,
-            price: item.sellingPrice
-          }));
 
-        router.push(`/customers?debt=${debtAmount}&cart=${encodeURIComponent(JSON.stringify(cartData))}`);
+    } else if (paymentMethod === 'credit') {
+        router.push(`/customers?debt=${total}&cart=${encodeURIComponent(JSON.stringify(cartItemsForTransaction))}`);
         clearCart();
     }
   };
@@ -207,14 +188,12 @@ export default function PosPage() {
     setOpenEdit(true);
   };
   
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!selectedProduct) return;
     
     const result = productSchema.safeParse({
         name: editProductDetails.name,
         sellingPrice: editProductDetails.sellingPrice,
-        stock: selectedProduct.stock, 
-        costPrice: selectedProduct.costPrice
     });
 
      if (!result.success) {
@@ -226,8 +205,7 @@ export default function PosPage() {
         return;
     }
     
-    setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, ...editProductDetails } as Product : p));
-    setCart(prevCart => prevCart.map(item => item.id === selectedProduct.id ? { ...item, ...editProductDetails } as CartItem : item));
+    await updateProduct(selectedProduct.id, result.data);
 
     toast({
       title: "تم التحديث",
@@ -253,9 +231,9 @@ export default function PosPage() {
     setOpenDelete(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!selectedProduct) return;
-    setProducts(products.filter(p => p.id !== selectedProduct.id));
+    await deleteProduct(selectedProduct.id);
     setCart(cart.filter(p => p.id !== selectedProduct.id));
     toast({
       title: "تم الحذف",
@@ -265,8 +243,8 @@ export default function PosPage() {
     setSelectedProduct(null);
   };
 
-  const handleSave = () => {
-    const result = productSchema.safeParse({
+  const handleSave = async () => {
+    const result = newProductSchema.safeParse({
         name: newProduct.name,
         stock: newProduct.stock,
         costPrice: newProduct.costPrice || 0,
@@ -283,16 +261,11 @@ export default function PosPage() {
         return;
     }
     
-    const productToAdd: Product = {
-      id: `PROD${Date.now()}`,
-      name: result.data.name,
+    await addProduct({
+      ...result.data,
       barcode: result.data.barcode || '',
-      stock: result.data.stock,
-      costPrice: result.data.costPrice,
-      sellingPrice: result.data.sellingPrice,
-    };
-    
-    setProducts(prev => [...prev, productToAdd]);
+    });
+
     toast({
       title: "تم الحفظ",
       description: "تمت إضافة المنتج بنجاح.",
@@ -305,7 +278,6 @@ export default function PosPage() {
     const { id, value } = e.target;
     setNewProduct(prev => ({ ...prev, [id]: value }));
   };
-
 
   return (
     <AppLayout>
@@ -380,7 +352,11 @@ export default function PosPage() {
               </DialogContent>
             </Dialog>
           </div>
-           {isClient ? (
+           {loading ? (
+                <div className="rounded-md border h-[60vh] flex items-center justify-center">
+                    <p>جار تحميل المنتجات...</p>
+                </div>
+             ) : (
               <ScrollArea className="h-[60vh] lg:h-[70vh]">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {filteredProducts.map((product) => (
@@ -420,10 +396,6 @@ export default function PosPage() {
                   ))}
                 </div>
               </ScrollArea>
-             ) : (
-                <div className="rounded-md border h-[60vh] flex items-center justify-center">
-                    <p>جار تحميل المنتجات...</p>
-                </div>
              )}
         </div>
         <div className="lg:col-span-1">
@@ -514,7 +486,7 @@ export default function PosPage() {
               <Label htmlFor="edit-sellingPrice" className="text-right">
                 سعر البيع
               </Label>
-              <Input id="edit-sellingPrice" type="number" value={editProductDetails.sellingPrice || ''} onChange={handleEditDetailsChange} className="col-span-3" />
+              <Input id="edit-sellingPrice" type="number" value={editProductDetails.sellingPrice ?? ''} onChange={handleEditDetailsChange} className="col-span-3" />
             </div>
           </div>
           <DialogFooter>
