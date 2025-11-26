@@ -39,7 +39,8 @@ export function Toaster() {
           </Toast>
         )
       })}
-      <ToastViewport className="sm:top-0 sm:right-auto sm:left-0" />
+      
+      <ToastViewport style={{ top: 'auto', bottom: '1rem', left: '1rem', right: 'auto', transform: 'none' }} />
     </ToastProvider>
   )
 }
