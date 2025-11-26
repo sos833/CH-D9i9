@@ -1,10 +1,12 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const AnimatedBackground = () => {
-  const shapes = React.useMemo(() => {
+  const [shapes, setShapes] = useState<React.ReactNode[]>([]);
+
+  useEffect(() => {
     const s = [];
     for (let i = 0; i < 20; i++) {
       const type = Math.random() > 0.5 ? 'bar' : 'curve';
@@ -16,7 +18,7 @@ export const AnimatedBackground = () => {
       };
       s.push(<div key={`shape-${i}`} className={`shape ${type}`} style={style} />);
     }
-    return s;
+    setShapes(s);
   }, []);
 
   return (
