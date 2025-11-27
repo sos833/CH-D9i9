@@ -243,7 +243,7 @@ function SuppliersPageContent() {
         ) : (
         <DataTable
             columns={columns}
-            data={suppliers.filter(s => s.totalDebt > 0.01)}
+            data={suppliers}
             filterColumnId="name"
             filterPlaceholder="تصفية الموردين..."
         />
@@ -434,3 +434,5 @@ export default function SuppliersPage() {
         </React.Suspense>
     );
 }
+
+    
