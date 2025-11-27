@@ -5,14 +5,15 @@ import PageHeader from "@/components/page-header";
 import StatCard from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog"; // تمت إزالة DialogTrigger لأنه غير ضروري هنا
+  DraggableDialog,
+  DraggableDialogContent,
+  DraggableDialogDescription,
+  DraggableDialogHeader,
+  DraggableDialogTitle,
+  DraggableDialogFooter,
+  DraggableDialogClose,
+  DraggableDialogBody,
+} from "@/components/ui/draggable-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -97,7 +98,6 @@ export default function CashboxPage() {
       <div className="flex items-center justify-between gap-4">
         <PageHeader title="صندوق النقد (لاكاس)" description="إدارة النقدية وسجل السحوبات." />
         
-        {/* التصحيح هنا: استخدام الزر مباشرة للتحكم في الـ State */}
         <Button onClick={() => setOpenWithdrawal(true)} className="gap-2">
           <Plus className="h-4 w-4" />
           سحب أموال
@@ -137,16 +137,15 @@ export default function CashboxPage() {
         </div>
       </div>
 
-      {/* نافذة الحوار (Modal) */}
-      <Dialog open={openWithdrawal} onOpenChange={setOpenWithdrawal}>
-        <DialogContent className="sm:max-w-[425px]" dir="rtl">
-          <DialogHeader className="text-right">
-            <DialogTitle>سحب أموال من الصندوق</DialogTitle>
-            <DialogDescription>
+      <DraggableDialog open={openWithdrawal} onOpenChange={setOpenWithdrawal}>
+        <DraggableDialogContent className="sm:max-w-[425px]" dir="rtl">
+          <DraggableDialogHeader className="text-right">
+            <DraggableDialogTitle>سحب أموال من الصندوق</DraggableDialogTitle>
+            <DraggableDialogDescription>
               الرصيد المتوفر حالياً: <span className="font-bold text-foreground">{currentCashInBox.toFixed(2)} د.ج</span>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
+            </DraggableDialogDescription>
+          </DraggableDialogHeader>
+          <DraggableDialogBody>
             <div className="grid gap-2">
               <Label htmlFor="withdrawal-amount" className="text-right">
                 المبلغ المراد سحبه (د.ج)
@@ -155,22 +154,22 @@ export default function CashboxPage() {
                 id="withdrawal-amount"
                 type="number"
                 placeholder="0.00"
-                className="text-left" // الأرقام تكتب من اليسار لليمين أفضل
+                className="text-left"
                 value={withdrawalAmount}
                 onChange={(e) => setWithdrawalAmount(e.target.value)}
               />
             </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <DialogClose asChild>
+          </DraggableDialogBody>
+          <DraggableDialogFooter className="gap-2 sm:gap-0">
+            <DraggableDialogClose asChild>
               <Button type="button" variant="outline">
                 إلغاء
               </Button>
-            </DialogClose>
+            </DraggableDialogClose>
             <Button type="button" onClick={handleSaveWithdrawal}>تأكيد السحب</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DraggableDialogFooter>
+        </DraggableDialogContent>
+      </DraggableDialog>
     </AppLayout>
   );
 }

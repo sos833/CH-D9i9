@@ -9,15 +9,16 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { columns as columnsDef } from "./components/columns";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
+  DraggableDialog,
+  DraggableDialogContent,
+  DraggableDialogDescription,
+  DraggableDialogFooter,
+  DraggableDialogHeader,
+  DraggableDialogTitle,
+  DraggableDialogClose,
+  DraggableDialogTrigger,
+  DraggableDialogBody,
+} from "@/components/ui/draggable-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -223,57 +224,57 @@ function CustomersPageContent() {
       <div className="flex items-center justify-between">
         <PageHeader title="العملاء" description="إدارة العملاء وتتبع ديونهم." />
         <div className="ml-auto flex items-center gap-2">
-          <Dialog open={openAdd} onOpenChange={(isOpen) => {
+          <DraggableDialog open={openAdd} onOpenChange={(isOpen) => {
             setOpenAdd(isOpen);
             if (!isOpen) router.replace('/customers');
           }}>
-            <DialogTrigger asChild>
+            <DraggableDialogTrigger asChild>
               <Button size="sm" className="h-8 gap-1">
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                   إضافة عميل
                 </span>
               </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{debtAmount ? 'إضافة دين لعميل' : 'إضافة عميل جديد'}</DialogTitle>
-                <DialogDescription>
+            </DraggableDialogTrigger>
+            <DraggableDialogContent>
+              <DraggableDialogHeader>
+                <DraggableDialogTitle>{debtAmount ? 'إضافة دين لعميل' : 'إضافة عميل جديد'}</DraggableDialogTitle>
+                <DraggableDialogDescription>
                  {debtAmount ? 'أدخل تفاصيل العميل لإضافة الدين.' : 'أدخل تفاصيل العميل الجديد لحفظه في القائمة.'}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
+                </DraggableDialogDescription>
+              </DraggableDialogHeader>
+              <DraggableDialogBody>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="name" className="text-right">
                     الاسم
                   </Label>
                   <Input id="name" placeholder="اسم العميل الكامل" className="col-span-3" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
+                <div className="grid grid-cols-4 items-center gap-4 mt-4">
                   <Label htmlFor="phone" className="text-right">
                     الهاتف
                   </Label>
                   <Input id="phone" placeholder="0XXXXXXXXX" className="col-span-3" value={newCustomerPhone} onChange={e => setNewCustomerPhone(e.target.value)}/>
                 </div>
                 {debtAmount > 0 && (
-                  <div className="grid grid-cols-4 items-center gap-4">
+                  <div className="grid grid-cols-4 items-center gap-4 mt-4">
                     <Label htmlFor="debt" className="text-right">
                       قيمة الدين
                     </Label>
                     <Input id="debt" value={`${debtAmount.toFixed(2)} د.ج`} readOnly className="col-span-3" />
                   </div>
                 )}
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
+              </DraggableDialogBody>
+              <DraggableDialogFooter>
+                <DraggableDialogClose asChild>
                   <Button type="button" variant="secondary" onClick={() => router.replace('/customers')}>
                     إلغاء
                   </Button>
-                </DialogClose>
+                </DraggableDialogClose>
                 <Button type="button" onClick={handleSaveCustomer}>{debtAmount ? 'حفظ الدين' : 'حفظ العميل'}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DraggableDialogFooter>
+            </DraggableDialogContent>
+          </DraggableDialog>
         </div>
       </div>
        {loading ? (
@@ -290,15 +291,15 @@ function CustomersPageContent() {
         )}
 
        {selectedCustomer && (
-        <Dialog open={openPayment} onOpenChange={setOpenPayment}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>إضافة دفعة لـ {selectedCustomer.name}</DialogTitle>
-              <DialogDescription>
+        <DraggableDialog open={openPayment} onOpenChange={setOpenPayment}>
+          <DraggableDialogContent>
+            <DraggableDialogHeader>
+              <DraggableDialogTitle>إضافة دفعة لـ {selectedCustomer.name}</DraggableDialogTitle>
+              <DraggableDialogDescription>
                 الرصيد الحالي للدين: {selectedCustomer.totalDebt.toFixed(2)} د.ج
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
+              </DraggableDialogDescription>
+            </DraggableDialogHeader>
+            <DraggableDialogBody>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="payment-amount" className="text-right">
                   المبلغ المدفوع
@@ -312,108 +313,110 @@ function CustomersPageContent() {
                   onChange={(e) => setPaymentAmount(e.target.value)}
                 />
               </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
+            </DraggableDialogBody>
+            <DraggableDialogFooter>
+              <DraggableDialogClose asChild>
                 <Button type="button" variant="secondary" onClick={() => setSelectedCustomer(null)}>
                   إلغاء
                 </Button>
-              </DialogClose>
+              </DraggableDialogClose>
               <Button type="button" onClick={handleSavePayment}>حفظ الدفعة</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DraggableDialogFooter>
+          </DraggableDialogContent>
+        </DraggableDialog>
       )}
       
        {selectedCustomer && (
-        <Dialog open={openEdit} onOpenChange={setOpenEdit}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>تعديل العميل</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
+        <DraggableDialog open={openEdit} onOpenChange={setOpenEdit}>
+          <DraggableDialogContent>
+            <DraggableDialogHeader>
+              <DraggableDialogTitle>تعديل العميل</DraggableDialogTitle>
+            </DraggableDialogHeader>
+            <DraggableDialogBody>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-customer-name" className="text-right">
                   الاسم
                 </Label>
                 <Input id="edit-customer-name" value={editCustomerName} onChange={e => setEditCustomerName(e.target.value)} className="col-span-3" />
               </div>
-               <div className="grid grid-cols-4 items-center gap-4">
+               <div className="grid grid-cols-4 items-center gap-4 mt-4">
                 <Label htmlFor="edit-customer-phone" className="text-right">
                   الهاتف
                 </Label>
                 <Input id="edit-customer-phone" value={editCustomerPhone} onChange={e => setEditCustomerPhone(e.target.value)} className="col-span-3" />
               </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
+            </DraggableDialogBody>
+            <DraggableDialogFooter>
+              <DraggableDialogClose asChild>
                 <Button type="button" variant="secondary" onClick={() => setSelectedCustomer(null)}>
                   إلغاء
                 </Button>
-              </DialogClose>
+              </DraggableDialogClose>
               <Button onClick={handleUpdateCustomer}>حفظ التغييرات</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DraggableDialogFooter>
+          </DraggableDialogContent>
+        </DraggableDialog>
        )}
        
         {selectedCustomer && (
-            <Dialog open={openDetails} onOpenChange={(isOpen) => {
+            <DraggableDialog open={openDetails} onOpenChange={(isOpen) => {
                 setOpenDetails(isOpen);
                 if (!isOpen) setSelectedCustomer(null);
             }}>
-            <DialogContent className="max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>تفاصيل العميل: {selectedCustomer.name}</DialogTitle>
-                    <DialogDescription>
+            <DraggableDialogContent className="max-w-lg">
+                <DraggableDialogHeader>
+                    <DraggableDialogTitle>تفاصيل العميل: {selectedCustomer.name}</DraggableDialogTitle>
+                    <DraggableDialogDescription>
                         <p><strong>الهاتف:</strong> {selectedCustomer.phone}</p>
                         <p><strong>إجمالي الدين الحالي:</strong> <span className="font-bold text-destructive">{selectedCustomer.totalDebt.toFixed(2)} د.ج</span></p>
-                    </DialogDescription>
-                </DialogHeader>
-                 <ScrollArea className="h-72 mt-4">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>التاريخ</TableHead>
-                                <TableHead>النوع</TableHead>
-                                <TableHead className="text-left">المبلغ</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {customerTransactions.length > 0 ? (
-                            customerTransactions.map(t => (
-                                <TableRow key={t.id}>
-                                    <TableCell>{new Date(t.date).toLocaleDateString('ar-DZ')}</TableCell>
-                                    <TableCell>
-                                        {t.items.some(i => i.productId === 'DEBT_PAYMENT') ? (
-                                            <Badge variant="default">دفعة</Badge>
-                                        ) : (
-                                            <Badge variant="destructive">دين</Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className={`text-left font-medium ${t.items.some(i => i.productId === 'DEBT_PAYMENT') ? 'text-green-600' : 'text-destructive'}`}>
-                                        {t.items.some(i => i.productId === 'DEBT_PAYMENT') ? '+' : '-'}
-                                        {t.total.toFixed(2)} د.ج
-                                    </TableCell>
+                    </DraggableDialogDescription>
+                </DraggableDialogHeader>
+                 <DraggableDialogBody>
+                    <ScrollArea className="h-72">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>التاريخ</TableHead>
+                                    <TableHead>النوع</TableHead>
+                                    <TableHead className="text-left">المبلغ</TableHead>
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={3} className="text-center">لا توجد معاملات لعرضها.</TableCell>
-                            </TableRow>
-                        )}
-                        </TableBody>
-                    </Table>
-                </ScrollArea>
-                <DialogFooter>
-                    <DialogClose asChild>
+                            </TableHeader>
+                            <TableBody>
+                            {customerTransactions.length > 0 ? (
+                                customerTransactions.map(t => (
+                                    <TableRow key={t.id}>
+                                        <TableCell>{new Date(t.date).toLocaleDateString('ar-DZ')}</TableCell>
+                                        <TableCell>
+                                            {t.items.some(i => i.productId === 'DEBT_PAYMENT') ? (
+                                                <Badge variant="default">دفعة</Badge>
+                                            ) : (
+                                                <Badge variant="destructive">دين</Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className={`text-left font-medium ${t.items.some(i => i.productId === 'DEBT_PAYMENT') ? 'text-green-600' : 'text-destructive'}`}>
+                                            {t.items.some(i => i.productId === 'DEBT_PAYMENT') ? '+' : '-'}
+                                            {t.total.toFixed(2)} د.ج
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center">لا توجد معاملات لعرضها.</TableCell>
+                                </TableRow>
+                            )}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                 </DraggableDialogBody>
+                <DraggableDialogFooter>
+                    <DraggableDialogClose asChild>
                         <Button type="button" variant="secondary">
                         إغلاق
                         </Button>
-                    </DialogClose>
-                </DialogFooter>
-            </DialogContent>
-            </Dialog>
+                    </DraggableDialogClose>
+                </DraggableDialogFooter>
+            </DraggableDialogContent>
+            </DraggableDialog>
         )}
 
     </AppLayout>

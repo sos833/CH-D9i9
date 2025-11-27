@@ -20,15 +20,16 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  DraggableDialog,
+  DraggableDialogContent,
+  DraggableDialogDescription,
+  DraggableDialogHeader,
+  DraggableDialogTitle,
+  DraggableDialogFooter,
+  DraggableDialogClose,
+  DraggableDialogTrigger,
+  DraggableDialogBody,
+} from "@/components/ui/draggable-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -287,58 +288,58 @@ export default function PosPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-             <Dialog open={openAdd} onOpenChange={setOpenAdd}>
-              <DialogTrigger asChild>
+             <DraggableDialog open={openAdd} onOpenChange={setOpenAdd}>
+              <DraggableDialogTrigger asChild>
                 <Button size="sm" className="h-10 gap-1">
                   <PlusCircle className="h-4 w-4" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                     إضافة منتج
                   </span>
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>إضافة منتج جديد</DialogTitle>
-                  <DialogDescription>
+              </DraggableDialogTrigger>
+              <DraggableDialogContent>
+                <DraggableDialogHeader>
+                  <DraggableDialogTitle>إضافة منتج جديد</DraggableDialogTitle>
+                  <DraggableDialogDescription>
                     أدخل تفاصيل المنتج الجديد لإضافته إلى المخزون.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
+                  </DraggableDialogDescription>
+                </DraggableDialogHeader>
+                <DraggableDialogBody>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">
                       الاسم
                     </Label>
                     <Input id="name" placeholder="اسم المنتج" className="col-span-3" value={newProduct.name} onChange={handleNewProductChange} />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
+                  <div className="grid grid-cols-4 items-center gap-4 mt-4">
                     <Label htmlFor="stock" className="text-right">
                       المخزون
                     </Label>
                     <Input id="stock" type="number" placeholder="0" className="col-span-3" value={newProduct.stock} onChange={handleNewProductChange}/>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
+                  <div className="grid grid-cols-4 items-center gap-4 mt-4">
                     <Label htmlFor="costPrice" className="text-right">
                       سعر التكلفة
                     </Label>
                     <Input id="costPrice" type="number" placeholder="0.00" className="col-span-3" value={newProduct.costPrice} onChange={handleNewProductChange} />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
+                  <div className="grid grid-cols-4 items-center gap-4 mt-4">
                     <Label htmlFor="sellingPrice" className="text-right">
                       سعر البيع
                     </Label>
                     <Input id="sellingPrice" type="number" placeholder="0.00" className="col-span-3" value={newProduct.sellingPrice} onChange={handleNewProductChange} />
                   </div>
-                </div>
-                <DialogFooter>
-                   <DialogClose asChild>
+                </DraggableDialogBody>
+                <DraggableDialogFooter>
+                   <DraggableDialogClose asChild>
                     <Button type="button" variant="secondary">
                       إلغاء
                     </Button>
-                  </DialogClose>
+                  </DraggableDialogClose>
                   <Button onClick={handleSave}>حفظ المنتج</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DraggableDialogFooter>
+              </DraggableDialogContent>
+            </DraggableDialog>
           </div>
            {loading ? (
                 <div className="rounded-md border h-[60vh] flex items-center justify-center">
@@ -455,38 +456,38 @@ export default function PosPage() {
       </div>
       
        {selectedProduct && (
-       <Dialog open={openEdit} onOpenChange={setOpenEdit}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>تعديل المنتج</DialogTitle>
-            <DialogDescription>
+       <DraggableDialog open={openEdit} onOpenChange={setOpenEdit}>
+        <DraggableDialogContent>
+          <DraggableDialogHeader>
+            <DraggableDialogTitle>تعديل المنتج</DraggableDialogTitle>
+            <DraggableDialogDescription>
               قم بتحديث تفاصيل المنتج.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
+            </DraggableDialogDescription>
+          </DraggableDialogHeader>
+          <DraggableDialogBody>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-name" className="text-right">
                 الاسم
               </Label>
               <Input id="edit-name" value={editProductDetails.name || ''} onChange={handleEditDetailsChange} className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="grid grid-cols-4 items-center gap-4 mt-4">
               <Label htmlFor="edit-sellingPrice" className="text-right">
                 سعر البيع
               </Label>
               <Input id="edit-sellingPrice" type="number" value={editProductDetails.sellingPrice ?? ''} onChange={handleEditDetailsChange} className="col-span-3" />
             </div>
-          </div>
-          <DialogFooter>
-              <DialogClose asChild>
+          </DraggableDialogBody>
+          <DraggableDialogFooter>
+              <DraggableDialogClose asChild>
               <Button type="button" variant="secondary" onClick={() => setSelectedProduct(null)}>
                 إلغاء
               </Button>
-            </DialogClose>
+            </DraggableDialogClose>
             <Button onClick={handleUpdate}>حفظ التغييرات</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DraggableDialogFooter>
+        </DraggableDialogContent>
+      </DraggableDialog>
       )}
 
       {selectedProduct && (

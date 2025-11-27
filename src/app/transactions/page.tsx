@@ -7,14 +7,15 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./components/columns";
 import { useApp } from "@/context/app-context";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
+  DraggableDialog,
+  DraggableDialogContent,
+  DraggableDialogHeader,
+  DraggableDialogTitle,
+  DraggableDialogDescription,
+  DraggableDialogFooter,
+  DraggableDialogClose,
+  DraggableDialogBody,
+} from "@/components/ui/draggable-dialog";
 import * as React from "react";
 import type { Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -53,48 +54,50 @@ export default function TransactionsPage() {
        )}
 
       {selectedTransaction && (
-        <Dialog open={!!selectedTransaction} onOpenChange={(isOpen) => !isOpen && setSelectedTransaction(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>تفاصيل المعاملة</DialogTitle>
-              <DialogDescription>
+        <DraggableDialog open={!!selectedTransaction} onOpenChange={(isOpen) => !isOpen && setSelectedTransaction(null)}>
+          <DraggableDialogContent className="sm:max-w-md">
+            <DraggableDialogHeader>
+              <DraggableDialogTitle>تفاصيل المعاملة</DraggableDialogTitle>
+              <DraggableDialogDescription>
                 معرف المعاملة: {selectedTransaction.id}
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="max-h-[60vh]">
-              <div className="py-4 pr-6">
-                <p><strong>التاريخ:</strong> {new Date(selectedTransaction.date).toLocaleString('ar-DZ')}</p>
-                <p><strong>طريقة الدفع:</strong> {selectedTransaction.paymentMethod === 'cash' ? 'نقدي' : 'دين'}</p>
-                {selectedTransaction.customerName && <p><strong>العميل:</strong> {selectedTransaction.customerName}</p>}
-                <Separator className="my-4" />
-                <h4 className="font-semibold mb-2">المنتجات:</h4>
-                <ul className="grid gap-3">
-                  {selectedTransaction.items.map((item, index) => (
-                    <li key={index} className="flex justify-between text-sm">
-                      <div>
-                        <span className="font-medium">{item.productName}</span>
-                        <span className="text-muted-foreground"> (x{item.quantity})</span>
-                      </div>
-                      <span>{(item.price * item.quantity).toFixed(2)} د.ج</span>
-                    </li>
-                  ))}
-                </ul>
-                <Separator className="my-4" />
-                <div className="flex justify-between font-bold text-lg">
-                  <span>الإجمالي:</span>
-                  <span>{selectedTransaction.total.toFixed(2)} د.ج</span>
+              </DraggableDialogDescription>
+            </DraggableDialogHeader>
+            <DraggableDialogBody>
+              <ScrollArea className="max-h-[60vh]">
+                <div className="pr-6">
+                  <p><strong>التاريخ:</strong> {new Date(selectedTransaction.date).toLocaleString('ar-DZ')}</p>
+                  <p><strong>طريقة الدفع:</strong> {selectedTransaction.paymentMethod === 'cash' ? 'نقدي' : 'دين'}</p>
+                  {selectedTransaction.customerName && <p><strong>العميل:</strong> {selectedTransaction.customerName}</p>}
+                  <Separator className="my-4" />
+                  <h4 className="font-semibold mb-2">المنتجات:</h4>
+                  <ul className="grid gap-3">
+                    {selectedTransaction.items.map((item, index) => (
+                      <li key={index} className="flex justify-between text-sm">
+                        <div>
+                          <span className="font-medium">{item.productName}</span>
+                          <span className="text-muted-foreground"> (x{item.quantity})</span>
+                        </div>
+                        <span>{(item.price * item.quantity).toFixed(2)} د.ج</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Separator className="my-4" />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>الإجمالي:</span>
+                    <span>{selectedTransaction.total.toFixed(2)} د.ج</span>
+                  </div>
                 </div>
-              </div>
-            </ScrollArea>
-            <DialogFooter>
-              <DialogClose asChild>
+              </ScrollArea>
+            </DraggableDialogBody>
+            <DraggableDialogFooter>
+              <DraggableDialogClose asChild>
                 <Button type="button" variant="secondary">
                   إغلاق
                 </Button>
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              </DraggableDialogClose>
+            </DraggableDialogFooter>
+          </DraggableDialogContent>
+        </DraggableDialog>
       )}
     </AppLayout>
   );
