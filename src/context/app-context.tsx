@@ -3,9 +3,9 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCollection, useDoc } from '@/firebase';
-import { collection, doc, setDoc, addDoc, deleteDoc, writeBatch, getDocs, query, DocumentReference } from 'firebase/firestore';
+import { collection, doc, setDoc, addDoc, deleteDoc, writeBatch, getDocs, query, DocumentReference, runTransaction } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import type { Product, Customer, Transaction, StoreSettings, CashWithdrawal } from '@/lib/types';
+import type { Product, Customer, Transaction, StoreSettings, CashWithdrawal, Supplier, SupplierTransaction } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -16,6 +16,8 @@ interface AppContextType {
   transactions: Transaction[];
   storeSettings: StoreSettings | null;
   cashWithdrawals: CashWithdrawal[];
+  suppliers: Supplier[];
+  supplierTransactions: SupplierTransaction[];
   loading: boolean;
   
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
@@ -33,6 +35,10 @@ interface AppContextType {
   
   addCashWithdrawal: (withdrawal: Omit<CashWithdrawal, 'id'>) => Promise<void>;
 
+  addSupplier: (supplier: Omit<Supplier, 'id'>) => Promise<void>;
+  updateSupplier: (supplierId: string, data: Partial<Supplier>) => Promise<void>;
+  addSupplierTransaction: (transaction: Omit<SupplierTransaction, 'id'>) => Promise<void>;
+  
   resetStore: () => Promise<void>;
 }
 
@@ -55,6 +61,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const { data: customersData, loading: loadingCustomers, setData: setCustomers } = useCollection<Customer>(firestore ? collection(firestore, 'customers') : null);
   const { data: transactionsData, loading: loadingTransactions, setData: setTransactions } = useCollection<Transaction>(firestore ? collection(firestore, 'transactions') : null);
   const { data: cashWithdrawalsData, loading: loadingWithdrawals, setData: setCashWithdrawals } = useCollection<CashWithdrawal>(firestore ? collection(firestore, 'cashWithdrawals') : null);
+  const { data: suppliersData, loading: loadingSuppliers, setData: setSuppliers } = useCollection<Supplier>(firestore ? collection(firestore, 'suppliers') : null);
+  const { data: supplierTransactionsData, loading: loadingSupplierTransactions, setData: setSupplierTransactions } = useCollection<SupplierTransaction>(firestore ? collection(firestore, 'supplierTransactions') : null);
   const { data: storeSettings, loading: loadingSettings, setData: setStoreSettingsData } = useDoc<StoreSettings>(firestore ? doc(firestore, 'config/store') : null);
   
   // Create state for optimistic updates
@@ -62,6 +70,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [customers, setCustomersState] = React.useState<Customer[]>([]);
   const [transactions, setTransactionsState] = React.useState<Transaction[]>([]);
   const [cashWithdrawals, setCashWithdrawalsState] = React.useState<CashWithdrawal[]>([]);
+  const [suppliers, setSuppliersState] = React.useState<Supplier[]>([]);
+  const [supplierTransactions, setSupplierTransactionsState] = React.useState<SupplierTransaction[]>([]);
 
   React.useEffect(() => {
     if (productsData) {
@@ -72,7 +82,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   React.useEffect(() => setCustomersState(customersData), [customersData]);
   React.useEffect(() => setTransactionsState(transactionsData), [transactionsData]);
   React.useEffect(() => setCashWithdrawalsState(cashWithdrawalsData), [cashWithdrawalsData]);
-
+  React.useEffect(() => setSuppliersState(suppliersData), [suppliersData]);
+  React.useEffect(() => setSupplierTransactionsState(supplierTransactionsData), [supplierTransactionsData]);
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
     if (!firestore) return;
@@ -263,10 +274,68 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addSupplier = async (supplier: Omit<Supplier, 'id'>) => {
+    if (!firestore) return;
+    const optimisticSupplier = { id: `temp-${Date.now()}`, ...supplier };
+    setSuppliersState(prev => [...prev, optimisticSupplier as Supplier]);
+    try {
+      const docRef = await addDoc(collection(firestore, 'suppliers'), supplier);
+      setSuppliers(prev => prev.map(s => s.id === optimisticSupplier.id ? { ...s, id: docRef.id } : s));
+    } catch (error) {
+      handleFirestoreError(error, { path: 'suppliers/{supplierId}', operation: 'create', requestResourceData: supplier });
+      setSuppliersState(prev => prev.filter(s => s.id !== optimisticSupplier.id));
+    }
+  };
+  
+  const updateSupplier = async (supplierId: string, data: Partial<Supplier>) => {
+    if (!firestore) return;
+    const originalSuppliers = suppliers;
+    setSuppliersState(prev => prev.map(s => s.id === supplierId ? {...s, ...data} : s));
+    try {
+      await setDoc(doc(firestore, 'suppliers', supplierId), data, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, { path: `suppliers/${supplierId}`, operation: 'update', requestResourceData: data });
+      setSuppliersState(originalSuppliers);
+    }
+  };
+
+  const addSupplierTransaction = async (transaction: Omit<SupplierTransaction, 'id'>) => {
+    if (!firestore) return;
+
+    try {
+      await runTransaction(firestore, async (firestoreTransaction) => {
+        const supplierRef = doc(firestore, "suppliers", transaction.supplierId);
+        const supplierDoc = await firestoreTransaction.get(supplierRef);
+        if (!supplierDoc.exists()) {
+          throw "Supplier not found!";
+        }
+        
+        const currentDebt = supplierDoc.data().totalDebt;
+        const newDebt = transaction.type === 'purchase' ? currentDebt + transaction.amount : currentDebt - transaction.amount;
+        
+        firestoreTransaction.update(supplierRef, { totalDebt: newDebt });
+        
+        const transactionRef = doc(collection(firestore, `suppliers/${transaction.supplierId}/transactions`));
+        firestoreTransaction.set(transactionRef, transaction);
+      });
+      
+      // No client-side optimistic update for transactions for now, let Firestore sync handle it.
+      // This is safer for transactional operations.
+      // We can add optimistic updates later if needed.
+
+    } catch (error) {
+       handleFirestoreError(error, {
+        path: `suppliers/${transaction.supplierId}/transactions`,
+        operation: 'create',
+        requestResourceData: transaction
+      });
+    }
+  };
+  
   const resetStore = async () => {
     if (!firestore) return;
 
-    const collectionsToDelete = ['products', 'customers', 'transactions', 'cashWithdrawals'];
+    const collectionsToDelete = ['products', 'customers', 'transactions', 'cashWithdrawals', 'suppliers'];
     
     try {
       const batch = writeBatch(firestore);
@@ -274,6 +343,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       for (const coll of collectionsToDelete) {
         const snapshot = await getDocs(query(collection(firestore, coll)));
         snapshot.docs.forEach(doc => {
+          // Need to delete subcollections for suppliers
+          if (coll === 'suppliers') {
+            const transactionCollRef = collection(firestore, `suppliers/${doc.id}/transactions`);
+            getDocs(transactionCollRef).then(subSnapshot => {
+                subSnapshot.forEach(subDoc => batch.delete(subDoc.ref));
+            })
+          }
           batch.delete(doc.ref);
         });
       }
@@ -287,6 +363,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setCustomersState([]);
       setTransactionsState([]);
       setCashWithdrawalsState([]);
+      setSuppliersState([]);
+      setSupplierTransactionsState([]);
       setStoreSettingsData({ initialSetupDone: false, storeName: '', initialCash: 0 });
 
     } catch (error: any) {
@@ -305,7 +383,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     transactions,
     storeSettings,
     cashWithdrawals,
-    loading: loadingProducts || loadingCustomers || loadingTransactions || loadingSettings || loadingWithdrawals,
+    suppliers,
+    supplierTransactions,
+    loading: loadingProducts || loadingCustomers || loadingTransactions || loadingSettings || loadingWithdrawals || loadingSuppliers || loadingSupplierTransactions,
     
     addProduct,
     updateProduct,
@@ -321,6 +401,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setStoreSettings,
 
     addCashWithdrawal,
+
+    addSupplier,
+    updateSupplier,
+    addSupplierTransaction,
 
     resetStore,
   };

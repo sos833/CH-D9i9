@@ -40,3 +40,19 @@ export type CashWithdrawal = {
   date: string;
   amount: number;
 };
+
+export type Supplier = {
+  id: string;
+  name: string;
+  phone: string;
+  totalDebt: number; // Amount owed to the supplier
+};
+
+export type SupplierTransaction = {
+  id: string;
+  supplierId: string;
+  date: string; // ISO string
+  type: 'purchase' | 'payment'; // Purchase of goods or payment to supplier
+  amount: number;
+  description: string;
+};

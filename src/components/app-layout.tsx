@@ -43,6 +43,7 @@ const navItems = [
   { href: '/transactions', icon: <Receipt />, label: 'المعاملات' },
   { href: '/inventory', icon: <Package />, label: 'المخزون' },
   { href: '/customers', icon: <Users />, label: 'العملاء' },
+  { href: '/suppliers', icon: <Truck />, label: 'الموردون' },
   { href: '/cashbox', icon: <Wallet />, label: 'الصندوق' },
   { href: '/analytics', icon: <LineChart />, label: 'التحاليل' },
   { href: '/calculator', icon: <Calculator />, label: 'آلة حاسبة' },

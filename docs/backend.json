@@ -122,6 +122,51 @@
             }
         },
         "required": ["storeName", "initialCash", "initialSetupDone"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Represents a supplier or company.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the supplier."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the supplier."
+        },
+        "totalDebt": {
+          "type": "number",
+          "description": "The total amount owed to the supplier."
+        }
+      },
+      "required": ["name", "phone", "totalDebt"]
+    },
+    "SupplierTransaction": {
+      "title": "Supplier Transaction",
+      "description": "Represents a transaction with a supplier, like a purchase or a payment.",
+      "type": "object",
+      "properties": {
+        "supplierId": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["purchase", "payment"]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": ["supplierId", "date", "type", "amount"]
     }
   },
   "auth": {
@@ -147,6 +192,14 @@
     "/config/store": {
         "schema": { "$ref": "#/entities/StoreSettings"},
         "description": "Stores general store settings."
+    },
+    "/suppliers/{supplierId}": {
+      "schema": { "$ref": "#/entities/Supplier" },
+      "description": "Stores supplier information."
+    },
+    "/suppliers/{supplierId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/SupplierTransaction" },
+      "description": "Stores transaction records with a specific supplier."
     }
   }
 }
